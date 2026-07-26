@@ -84,19 +84,21 @@ Until granted, `notifications` in `/dashboard` reads `0`.
 
 ## Building
 
-This was scaffolded in an environment without a JDK/Gradle installed, so
-it has **not** been compiled yet. Everything needed to build is here
-*except* the Gradle wrapper jar (`gradle/wrapper/gradle-wrapper.jar`),
-which is a binary file - `gradle-wrapper.properties` and the version
-catalog are in place, but you'll need to do one of:
+Toolchain: AGP 9.3.0, Kotlin 2.2.10, Gradle 9.5.0, compileSdk/targetSdk 36,
+minSdk 26 - matched to whatever a fresh "New Project" in the installed
+Android Studio itself generates, so `./gradlew` and Android Studio's own
+sync/build should never disagree.
 
-- Open the project root in Android Studio and let it regenerate the
-  wrapper on first sync, or
-- Run `gradle wrapper --gradle-version 8.9` from this directory if you
-  have a system Gradle install.
+```
+./gradlew assembleDebug        # builds app/build/outputs/apk/debug/app-debug.apk
+./gradlew testDebugUnitTest    # runs the JVM-level server tests (no device needed)
+./gradlew assembleRelease      # release variant, lint included
+```
 
-After that, `./gradlew assembleDebug` (or Android Studio's Run button)
-builds and installs the app.
+All three are verified to pass as of this writing, including a real
+install + launch on a Galaxy A13 over adb with the HTTP endpoints hit
+from a separate machine on the same LAN - see the commit history for
+details.
 
 ## Roadmap
 
