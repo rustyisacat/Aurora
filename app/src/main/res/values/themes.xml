@@ -1,0 +1,6 @@
+<resources>
+    <!-- Base platform theme only - all real theming (colors, typography) is done in
+         Compose via ui/theme/Theme.kt. This just needs to exist for the manifest
+         and to control the system splash background before Compose takes over. -->
+    <style name="Theme.Aurora" parent="android:Theme.Material.Light.NoActionBar" />
+</resources>

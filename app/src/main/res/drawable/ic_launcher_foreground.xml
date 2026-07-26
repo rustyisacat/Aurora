@@ -1,0 +1,17 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <!-- Simple sunrise-over-horizon mark: placeholder launcher art until real
+         brand assets exist. -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M54,30 A24,24 0 0 1 78,54 L30,54 A24,24 0 0 1 54,30 Z" />
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M24,64 H84 V70 H24 Z" />
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M30,76 H78 V82 H30 Z" />
+</vector>
