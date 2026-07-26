@@ -1,13 +1,17 @@
 plugins {
     alias(libs.plugins.android.application)
-    alias(libs.plugins.kotlin.android)
+    alias(libs.plugins.kotlin.compose)
     alias(libs.plugins.kotlin.serialization)
-    alias(libs.plugins.compose.compiler)
 }
 
 android {
     namespace = "com.rusty.aurora"
-    compileSdk = 35
+
+    compileSdk {
+        version = release(36) {
+            minorApiLevel = 1
+        }
+    }
 
     defaultConfig {
         applicationId = "com.rusty.aurora"
@@ -17,14 +21,16 @@ android {
         // fallback assets needed). Aurora only ever runs on the author's
         // own Galaxy A13, so there's no reason to support older devices.
         minSdk = 26
-        targetSdk = 35
+        targetSdk = 36
         versionCode = 1
         versionName = "0.1"
     }
 
     buildTypes {
         release {
-            isMinifyEnabled = false
+            optimization {
+                enable = false
+            }
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
@@ -35,10 +41,6 @@ android {
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
-    }
-
-    kotlinOptions {
-        jvmTarget = "17"
     }
 
     buildFeatures {
@@ -72,4 +74,10 @@ dependencies {
     implementation(libs.nanohttpd)
 
     debugImplementation(libs.androidx.compose.ui.tooling)
+
+    // Plain JUnit4 on the JVM (no Robolectric/instrumentation) - enough to
+    // start AuroraHttpServer against fake repositories and hit it over real
+    // HTTP, since none of api/ or the repository interfaces touch the
+    // Android framework directly.
+    testImplementation(libs.junit)
 }

@@ -1,13 +1,17 @@
 [versions]
-agp = "8.7.3"
-kotlin = "2.0.21"
-coreKtx = "1.15.0"
-lifecycle = "2.8.7"
-activityCompose = "1.9.3"
-composeBom = "2024.12.01"
+# agp/kotlin/coreKtx/lifecycle/activityCompose/composeBom mirror the versions
+# this machine's installed Android Studio (AI-261.25134.95) itself generates
+# for a new project - confirmed compatible with its bundled Gradle 9.5.0.
+agp = "9.3.0"
+kotlin = "2.2.10"
+coreKtx = "1.10.1"
+lifecycle = "2.6.1"
+activityCompose = "1.8.0"
+composeBom = "2026.02.01"
 kotlinxSerializationJson = "1.7.3"
 kotlinxCoroutines = "1.9.0"
 nanohttpd = "2.3.1"
+junit = "4.13.2"
 
 [libraries]
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
@@ -23,9 +27,11 @@ androidx-compose-material3 = { group = "androidx.compose.material3", name = "mat
 kotlinx-serialization-json = { group = "org.jetbrains.kotlinx", name = "kotlinx-serialization-json", version.ref = "kotlinxSerializationJson" }
 kotlinx-coroutines-android = { group = "org.jetbrains.kotlinx", name = "kotlinx-coroutines-android", version.ref = "kotlinxCoroutines" }
 nanohttpd = { group = "org.nanohttpd", name = "nanohttpd", version.ref = "nanohttpd" }
+junit = { group = "junit", name = "junit", version.ref = "junit" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }
-kotlin-android = { id = "org.jetbrains.kotlin.android", version.ref = "kotlin" }
+# No separate org.jetbrains.kotlin.android plugin: kotlin-compose applies it
+# transitively under AGP 9.3.0 (confirmed by building the reference project).
+kotlin-compose = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "kotlin" }
 kotlin-serialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlin" }
-compose-compiler = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "kotlin" }
