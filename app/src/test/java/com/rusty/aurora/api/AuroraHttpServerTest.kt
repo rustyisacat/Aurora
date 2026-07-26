@@ -126,6 +126,29 @@ class AuroraHttpServerTest {
         assertEquals(404, connection.responseCode)
     }
 
+    @Test
+    fun `responses include CORS headers so a browser fetch from the dashboard's origin can read them`() {
+        val baseUrl = startServer()
+        val connection = get("$baseUrl/dashboard")
+        connection.responseCode // force the request to actually execute
+
+        assertEquals("*", connection.getHeaderField("Access-Control-Allow-Origin"))
+        assertEquals("true", connection.getHeaderField("Access-Control-Allow-Private-Network"))
+    }
+
+    @Test
+    fun `OPTIONS preflight is answered directly with CORS headers, without going through routing`() {
+        val baseUrl = startServer()
+        val connection = (URL("$baseUrl/dashboard").openConnection() as HttpURLConnection).apply {
+            requestMethod = "OPTIONS"
+            connectTimeout = 2000
+            readTimeout = 2000
+        }
+
+        assertEquals(200, connection.responseCode)
+        assertEquals("*", connection.getHeaderField("Access-Control-Allow-Origin"))
+    }
+
     private fun get(url: String): HttpURLConnection =
         (URL(url).openConnection() as HttpURLConnection).apply {
             requestMethod = "GET"
