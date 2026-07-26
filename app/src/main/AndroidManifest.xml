@@ -4,6 +4,14 @@
     <!-- Required for NanoHTTPD to open a listening server socket, not just for outbound requests. -->
     <uses-permission android:name="android.permission.INTERNET" />
 
+    <!-- Lets WeatherRepository check connectivity before attempting a fetch, instead of
+         eating a guaranteed-to-fail request/timeout every 15 minutes while offline. -->
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+
+    <!-- Dangerous permission - requested at runtime by MainActivity. Denial is handled
+         gracefully: CalendarRepository just reports an empty event list. -->
+    <uses-permission android:name="android.permission.READ_CALENDAR" />
+
     <application
         android:name=".AuroraApplication"
         android:allowBackup="true"
