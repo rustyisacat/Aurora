@@ -11,6 +11,7 @@ import com.rusty.aurora.layout.LayoutRepository
 import com.rusty.aurora.layout.TileConfig
 import com.rusty.aurora.notifications.NotificationCountRepositoryImpl
 import com.rusty.aurora.notifications.NotificationGroup
+import com.rusty.aurora.profile.UserProfileRepository
 import com.rusty.aurora.sound.SoundInfo
 import com.rusty.aurora.sound.SoundMachineState
 import com.rusty.aurora.sound.SoundRepository
@@ -40,7 +41,7 @@ class AuroraHttpServerTest {
             """{"id":"notifications","visible":true,"size":"large"},""" +
             """{"id":"schedule","visible":true,"size":"medium"},""" +
             """{"id":"alarm","visible":true,"size":"small"},""" +
-            """{"id":"sound","visible":true,"size":"large"}]}"""
+            """{"id":"sound","visible":true,"size":"large"}],"userName":null}"""
 
     private class FakeBatteryRepository(
         private val level: Int,
@@ -69,6 +70,13 @@ class AuroraHttpServerTest {
         override fun setLayout(tiles: List<TileConfig>) {
             if (tiles.none { it.visible }) return
             this.tiles = tiles
+        }
+    }
+
+    private class FakeUserProfileRepository(private var name: String? = null) : UserProfileRepository {
+        override fun getUserName(): String? = name
+        override fun setUserName(name: String) {
+            this.name = name
         }
     }
 
@@ -152,7 +160,8 @@ class AuroraHttpServerTest {
                 alarmRepository = FakeAlarmRepository(nextAlarm),
                 weatherRepository = FakeWeatherRepository(weather),
                 soundRepository = fakeSoundRepository,
-                layoutRepository = FakeLayoutRepository()
+                layoutRepository = FakeLayoutRepository(),
+                userProfileRepository = FakeUserProfileRepository()
             ),
             PlaySoundRoute(fakeSoundRepository),
             PauseSoundRoute(fakeSoundRepository),

@@ -14,6 +14,7 @@ import com.rusty.aurora.layout.TileSize
 import com.rusty.aurora.location.LocationRepository
 import com.rusty.aurora.model.ServerStatus
 import com.rusty.aurora.notifications.NotificationCountRepository
+import com.rusty.aurora.profile.UserProfileRepository
 import com.rusty.aurora.service.AuroraServerController
 import com.rusty.aurora.util.NetworkUtil
 import com.rusty.aurora.weather.WeatherRepository
@@ -40,7 +41,8 @@ data class AuroraUiState(
     val calendarEvents: List<CalendarEvent> = emptyList(),
     val nextAlarm: NextAlarm? = null,
     val weather: WeatherSnapshot? = null,
-    val tileLayout: List<TileConfig> = emptyList()
+    val tileLayout: List<TileConfig> = emptyList(),
+    val userName: String? = null
 ) {
     val dashboardUrl: String?
         get() = localIpAddress?.let { ip -> "http://$ip:$port/dashboard" }
@@ -55,10 +57,13 @@ class AuroraViewModel(
     private val weatherRepository: WeatherRepository,
     private val layoutRepository: LayoutRepository,
     private val locationRepository: LocationRepository,
+    private val userProfileRepository: UserProfileRepository,
     private val hasNotificationAccess: () -> Boolean
 ) : ViewModel() {
 
-    private val _uiState = MutableStateFlow(AuroraUiState(tileLayout = layoutRepository.getLayout()))
+    private val _uiState = MutableStateFlow(
+        AuroraUiState(tileLayout = layoutRepository.getLayout(), userName = userProfileRepository.getUserName())
+    )
     val uiState: StateFlow<AuroraUiState> = _uiState.asStateFlow()
 
     init {
@@ -129,6 +134,12 @@ class AuroraViewModel(
         _uiState.update { it.copy(tileLayout = layoutRepository.getLayout()) }
     }
 
+    /** Called from the first-launch name prompt, and from "Change Name" later. */
+    fun setUserName(name: String) {
+        userProfileRepository.setUserName(name)
+        _uiState.update { it.copy(userName = userProfileRepository.getUserName()) }
+    }
+
     private fun observeServerStatus() {
         viewModelScope.launch {
             serverController.status.collect { status ->
@@ -182,6 +193,7 @@ class AuroraViewModel(
         private val weatherRepository: WeatherRepository,
         private val layoutRepository: LayoutRepository,
         private val locationRepository: LocationRepository,
+        private val userProfileRepository: UserProfileRepository,
         private val hasNotificationAccess: () -> Boolean
     ) : ViewModelProvider.Factory {
         override fun <T : ViewModel> create(modelClass: Class<T>): T {
@@ -195,6 +207,7 @@ class AuroraViewModel(
                 weatherRepository,
                 layoutRepository,
                 locationRepository,
+                userProfileRepository,
                 hasNotificationAccess
             ) as T
         }

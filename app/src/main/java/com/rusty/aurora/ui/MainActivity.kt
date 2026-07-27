@@ -46,6 +46,7 @@ class MainActivity : ComponentActivity() {
             weatherRepository = container.weatherRepository,
             layoutRepository = container.layoutRepository,
             locationRepository = container.locationRepository,
+            userProfileRepository = container.userProfileRepository,
             hasNotificationAccess = { NotificationAccessUtil.isNotificationAccessGranted(this) }
         )
     }
@@ -74,33 +75,51 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         setContent {
             val uiState by viewModel.uiState.collectAsState()
-            // Two screens, no back stack to speak of - a plain boolean is
-            // simpler and more reliable here than pulling in Navigation-Compose
-            // for what's really just "show the other screen, then come back."
+            // Three screens, no real back stack to speak of - plain booleans
+            // are simpler and more reliable here than pulling in
+            // Navigation-Compose for what's really just "show a different
+            // screen, then come back."
             var showCustomizeScreen by remember { mutableStateOf(false) }
+            var forceNameEntry by remember { mutableStateOf(false) }
 
             AuroraTheme(weatherCondition = uiState.weather?.condition) {
-                if (showCustomizeScreen) {
-                    CustomizeLayoutScreen(
-                        tiles = uiState.tileLayout,
-                        onBack = { showCustomizeScreen = false },
-                        onMoveUp = viewModel::moveTileUp,
-                        onMoveDown = viewModel::moveTileDown,
-                        onVisibleChange = viewModel::setTileVisible,
-                        onSizeChange = viewModel::setTileSize
-                    )
-                } else {
-                    AuroraScreen(
-                        uiState = uiState,
-                        onStartServer = viewModel::startServer,
-                        onStopServer = viewModel::stopServer,
-                        onCopyDashboardUrl = ::copyDashboardUrlToClipboard,
-                        onRequestNotificationAccess = ::openNotificationAccessSettings,
-                        onRequestCalendarAccess = ::requestCalendarPermission,
-                        onRequestLocationAccess = ::requestLocationPermission,
-                        onImportCustomSound = ::launchCustomSoundPicker,
-                        onCustomizeDashboard = { showCustomizeScreen = true }
-                    )
+                when {
+                    // Blocks everything else until answered - first launch has
+                    // no name yet, and uiState.userName stays null until this
+                    // is submitted at least once.
+                    uiState.userName.isNullOrBlank() || forceNameEntry -> {
+                        NameEntryScreen(
+                            initialValue = uiState.userName ?: "",
+                            onSubmit = { name ->
+                                viewModel.setUserName(name)
+                                forceNameEntry = false
+                            }
+                        )
+                    }
+                    showCustomizeScreen -> {
+                        CustomizeLayoutScreen(
+                            tiles = uiState.tileLayout,
+                            onBack = { showCustomizeScreen = false },
+                            onMoveUp = viewModel::moveTileUp,
+                            onMoveDown = viewModel::moveTileDown,
+                            onVisibleChange = viewModel::setTileVisible,
+                            onSizeChange = viewModel::setTileSize
+                        )
+                    }
+                    else -> {
+                        AuroraScreen(
+                            uiState = uiState,
+                            onStartServer = viewModel::startServer,
+                            onStopServer = viewModel::stopServer,
+                            onCopyDashboardUrl = ::copyDashboardUrlToClipboard,
+                            onRequestNotificationAccess = ::openNotificationAccessSettings,
+                            onRequestCalendarAccess = ::requestCalendarPermission,
+                            onRequestLocationAccess = ::requestLocationPermission,
+                            onImportCustomSound = ::launchCustomSoundPicker,
+                            onCustomizeDashboard = { showCustomizeScreen = true },
+                            onChangeName = { forceNameEntry = true }
+                        )
+                    }
                 }
             }
         }

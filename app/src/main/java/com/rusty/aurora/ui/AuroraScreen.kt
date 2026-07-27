@@ -28,6 +28,7 @@ import androidx.compose.material.icons.outlined.Cloud
 import androidx.compose.material.icons.outlined.ContentCopy
 import androidx.compose.material.icons.outlined.Dashboard
 import androidx.compose.material.icons.outlined.Dns
+import androidx.compose.material.icons.outlined.Edit
 import androidx.compose.material.icons.outlined.Grain
 import androidx.compose.material.icons.outlined.LibraryMusic
 import androidx.compose.material.icons.outlined.Notifications
@@ -71,6 +72,7 @@ fun AuroraScreen(
     onRequestLocationAccess: () -> Unit,
     onImportCustomSound: () -> Unit,
     onCustomizeDashboard: () -> Unit,
+    onChangeName: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     Surface(modifier = modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
@@ -169,6 +171,16 @@ fun AuroraScreen(
                 Icon(Icons.Outlined.Dashboard, contentDescription = null, modifier = Modifier.size(18.dp))
                 Spacer(Modifier.width(8.dp))
                 Text("Customize Dashboard")
+            }
+
+            OutlinedButton(
+                onClick = onChangeName,
+                shape = RoundedCornerShape(14.dp),
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Icon(Icons.Outlined.Edit, contentDescription = null, modifier = Modifier.size(18.dp))
+                Spacer(Modifier.width(8.dp))
+                Text("Change Name")
             }
 
             Spacer(Modifier.height(4.dp))

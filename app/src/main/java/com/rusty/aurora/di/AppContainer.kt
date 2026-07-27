@@ -23,6 +23,8 @@ import com.rusty.aurora.location.LocationRepository
 import com.rusty.aurora.location.LocationRepositoryImpl
 import com.rusty.aurora.notifications.NotificationCountRepository
 import com.rusty.aurora.notifications.NotificationCountRepositoryImpl
+import com.rusty.aurora.profile.UserProfileRepository
+import com.rusty.aurora.profile.UserProfileRepositoryImpl
 import com.rusty.aurora.service.AuroraServerController
 import com.rusty.aurora.sound.SoundLibrary
 import com.rusty.aurora.sound.SoundRepository
@@ -33,7 +35,7 @@ import com.rusty.aurora.weather.WeatherRepositoryImpl
 /**
  * Hand-rolled composition root.
  *
- * Eight repositories is still comfortably within "wire it by hand" territory -
+ * Nine repositories is still comfortably within "wire it by hand" territory -
  * a DI framework would add build time and APK size for no benefit yet.
  * Every class still takes its dependencies through its constructor, so the
  * option to introduce one later (or swap in fakes for tests) stays open.
@@ -61,6 +63,8 @@ class AppContainer(context: Context) {
 
     val layoutRepository: LayoutRepository = LayoutRepositoryImpl(context)
 
+    val userProfileRepository: UserProfileRepository = UserProfileRepositoryImpl(context)
+
     private val routes = listOf(
         HealthRoute(),
         DashboardRoute(
@@ -70,7 +74,8 @@ class AppContainer(context: Context) {
             alarmRepository = alarmRepository,
             weatherRepository = weatherRepository,
             soundRepository = soundRepository,
-            layoutRepository = layoutRepository
+            layoutRepository = layoutRepository,
+            userProfileRepository = userProfileRepository
         ),
         PlaySoundRoute(soundRepository),
         PauseSoundRoute(soundRepository),

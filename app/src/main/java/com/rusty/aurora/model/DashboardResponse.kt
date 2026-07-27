@@ -21,7 +21,9 @@ import kotlinx.serialization.Serializable
  * "not playing, nothing loaded" is a well-defined state, not an absence of
  * data. layout is the Morning Overview page's card order/visibility/size,
  * customized from the phone app (LayoutRepository) - the dashboard only
- * ever reads this, it never writes it back.
+ * ever reads this, it never writes it back. userName is null until the
+ * first-launch name prompt has been answered (UserProfileRepository) - the
+ * Morning Briefing greets without a name until then.
  */
 @Serializable
 data class DashboardResponse(
@@ -33,5 +35,6 @@ data class DashboardResponse(
     val calendar: List<CalendarEvent> = emptyList(),
     val weather: WeatherSnapshot? = null,
     val soundMachine: SoundMachineState,
-    val layout: List<TileConfig> = DEFAULT_TILE_LAYOUT
+    val layout: List<TileConfig> = DEFAULT_TILE_LAYOUT,
+    val userName: String? = null
 )
