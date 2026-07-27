@@ -10,7 +10,7 @@ smart display. It reads live data straight off the phone — battery,
 notifications, calendar, alarms, weather — and a bedside sound machine you
 control from your phone but that actually plays through the display's own
 speakers, then serves all of it as JSON over your home Wi-Fi to
-[**echo-dashboard**](https://github.com/HChaffin/echo-dashboard), a companion
+[**echo-dashboard**](https://github.com/rustyisacat/echo-dashboard), a companion
 kiosk frontend built for a repurposed Amazon Echo Show.
 
 No cloud account, no subscription, no third-party server in the loop —
@@ -48,7 +48,7 @@ just your phone talking HTTP to a screen on the same network.
 
 Aurora runs an embedded HTTP server ([NanoHTTPD](https://github.com/NanoHttpd/nanohttpd))
 on the phone. The dashboard — a static HTML/CSS/JS kiosk page, see
-[echo-dashboard](https://github.com/HChaffin/echo-dashboard) — polls it every
+[echo-dashboard](https://github.com/rustyisacat/echo-dashboard) — polls it every
 30 seconds and renders the result. Both devices just need to be on the
 same Wi-Fi network.
 
@@ -57,7 +57,7 @@ same Wi-Fi network.
 - An Android phone, API 26+ (Android 8.0), with a working Wi-Fi connection.
 - [Android Studio](https://developer.android.com/studio) or a standalone
   JDK 17+ to build.
-- A display to point [echo-dashboard](https://github.com/HChaffin/echo-dashboard)
+- A display to point [echo-dashboard](https://github.com/rustyisacat/echo-dashboard)
   at — this was built for a rooted Amazon Echo Show 5 in kiosk mode, but
   any device with a browser on the same network works.
 
@@ -66,7 +66,7 @@ same Wi-Fi network.
 1. **Clone and open the project:**
 
    ```
-   git clone https://github.com/HChaffin/Aurora.git
+   git clone https://github.com/rustyisacat/Aurora.git
    cd Aurora
    ```
 
@@ -95,7 +95,7 @@ same Wi-Fi network.
      events. Both are optional; declining just means those fields read
      empty instead of the app crashing.
 
-5. **Point [echo-dashboard](https://github.com/HChaffin/echo-dashboard) at
+5. **Point [echo-dashboard](https://github.com/rustyisacat/echo-dashboard) at
    Aurora's address** — see that repo's README for setup.
 
 ## Configuration
@@ -132,7 +132,7 @@ to be available.
 Sound Machine control routes (`POST /sound/play`, `/sound/pause`,
 `/sound/stop`, `/sound/volume`, `/sound/timer`, `GET /sound/library`,
 `GET /sound/stream`) exist for the dashboard's own use — see
-[echo-dashboard](https://github.com/HChaffin/echo-dashboard).
+[echo-dashboard](https://github.com/rustyisacat/echo-dashboard).
 
 ## Architecture
 
