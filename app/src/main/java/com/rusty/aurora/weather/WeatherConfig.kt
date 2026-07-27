@@ -1,12 +1,13 @@
 package com.rusty.aurora.weather
 
 /**
- * Aurora is a bedside dashboard bolted to one physical location, not a
- * mobile weather app - a fixed coordinate is simpler and more reliable
- * than adding a location permission and taking a GPS fix on every refresh.
+ * Fallback coordinate, used only when LocationRepository can't provide one
+ * (location permission not granted, or no fix has ever been obtained - see
+ * WeatherRepositoryImpl). Weather otherwise follows the phone's actual
+ * location automatically.
  *
  * Currently set to Jacksonville, FL 32258 (approximate). Update these two
- * constants if Aurora's home location ever changes.
+ * constants if this fallback should point somewhere else.
  */
 object WeatherConfig {
     const val LATITUDE = 30.1588

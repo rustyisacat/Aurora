@@ -7,7 +7,11 @@ import kotlinx.serialization.Serializable
 @Serializable
 internal data class OpenMeteoResponse(
     val current: CurrentBlock,
-    val daily: DailyBlock
+    val daily: DailyBlock,
+    // Present because the request includes "&timezone=auto" - an IANA name
+    // (e.g. "America/New_York") resolved from the request's lat/long, which
+    // is what lets the dashboard's clock follow wherever the phone actually is.
+    val timezone: String
 ) {
     @Serializable
     data class CurrentBlock(

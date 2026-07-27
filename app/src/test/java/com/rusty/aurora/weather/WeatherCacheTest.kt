@@ -8,7 +8,8 @@ import org.junit.Test
 
 class WeatherCacheTest {
 
-    private val snapshot = WeatherSnapshot(temperature = 74, condition = "Clear", high = 86, low = 68)
+    private val snapshot =
+        WeatherSnapshot(temperature = 74, condition = "Clear", high = 86, low = 68, timezone = "America/New_York")
 
     @Test
     fun `empty cache is stale and has no current value`() {

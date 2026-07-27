@@ -185,7 +185,7 @@ class AuroraHttpServerTest {
         val baseUrl = startServer(
             calendarEvents = listOf(CalendarEvent(title = "School", start = "08:00", end = "15:00", allDay = false)),
             nextAlarm = NextAlarm(time = "07:00", enabled = true),
-            weather = WeatherSnapshot(temperature = 74, condition = "Clear", high = 86, low = 68),
+            weather = WeatherSnapshot(temperature = 74, condition = "Clear", high = 86, low = 68, timezone = "America/New_York"),
             notificationGroups = listOf(NotificationGroup(app = "Discord", count = 3))
         )
         val connection = get("$baseUrl/dashboard")
@@ -198,7 +198,7 @@ class AuroraHttpServerTest {
                 """"notificationGroups":[{"app":"Discord","count":3}],""" +
                 """"nextAlarm":{"time":"07:00","enabled":true},""" +
                 """"calendar":[{"title":"School","start":"08:00","end":"15:00","allDay":false}],""" +
-                """"weather":{"temperature":74,"condition":"Clear","high":86,"low":68},""" +
+                """"weather":{"temperature":74,"condition":"Clear","high":86,"low":68,"timezone":"America/New_York"},""" +
                 """"soundMachine":{"playing":false,"sound":null,"volume":50,"sleepTimerMinutes":null},""" +
                 DEFAULT_LAYOUT_JSON,
             body

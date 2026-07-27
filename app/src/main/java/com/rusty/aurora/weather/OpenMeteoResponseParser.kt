@@ -18,7 +18,8 @@ internal object OpenMeteoResponseParser {
             temperature = response.current.temperature.roundToInt(),
             condition = WeatherConditionMapper.toCondition(response.current.weatherCode),
             high = response.daily.high.first().roundToInt(),
-            low = response.daily.low.first().roundToInt()
+            low = response.daily.low.first().roundToInt(),
+            timezone = response.timezone
         )
     }
 }

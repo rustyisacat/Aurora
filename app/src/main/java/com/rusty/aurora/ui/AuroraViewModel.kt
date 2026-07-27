@@ -11,6 +11,7 @@ import com.rusty.aurora.calendar.CalendarRepository
 import com.rusty.aurora.layout.LayoutRepository
 import com.rusty.aurora.layout.TileConfig
 import com.rusty.aurora.layout.TileSize
+import com.rusty.aurora.location.LocationRepository
 import com.rusty.aurora.model.ServerStatus
 import com.rusty.aurora.notifications.NotificationCountRepository
 import com.rusty.aurora.service.AuroraServerController
@@ -35,6 +36,7 @@ data class AuroraUiState(
     val notificationCount: Int = 0,
     val hasNotificationAccess: Boolean = false,
     val hasCalendarPermission: Boolean = false,
+    val hasLocationPermission: Boolean = false,
     val calendarEvents: List<CalendarEvent> = emptyList(),
     val nextAlarm: NextAlarm? = null,
     val weather: WeatherSnapshot? = null,
@@ -52,6 +54,7 @@ class AuroraViewModel(
     private val alarmRepository: AlarmRepository,
     private val weatherRepository: WeatherRepository,
     private val layoutRepository: LayoutRepository,
+    private val locationRepository: LocationRepository,
     private val hasNotificationAccess: () -> Boolean
 ) : ViewModel() {
 
@@ -75,15 +78,17 @@ class AuroraViewModel(
     }
 
     /**
-     * Called from Activity#onResume and the calendar permission callback - both
-     * notification access (system Settings) and calendar access (runtime dialog)
-     * are granted outside this ViewModel's control.
+     * Called from Activity#onResume and the calendar/location permission
+     * callbacks - notification access (system Settings), calendar access,
+     * and location access (both runtime dialogs) are all granted outside
+     * this ViewModel's control.
      */
     fun refreshPermissionState() {
         _uiState.update {
             it.copy(
                 hasNotificationAccess = hasNotificationAccess(),
-                hasCalendarPermission = calendarRepository.hasCalendarPermission()
+                hasCalendarPermission = calendarRepository.hasCalendarPermission(),
+                hasLocationPermission = locationRepository.hasLocationPermission()
             )
         }
     }
@@ -157,6 +162,7 @@ class AuroraViewModel(
                         isCharging = batteryRepository.isCharging(),
                         hasNotificationAccess = hasNotificationAccess(),
                         hasCalendarPermission = calendarRepository.hasCalendarPermission(),
+                        hasLocationPermission = locationRepository.hasLocationPermission(),
                         calendarEvents = calendarRepository.getTodayEvents(),
                         nextAlarm = alarmRepository.getNextAlarm(),
                         weather = weatherRepository.getWeather()
@@ -175,6 +181,7 @@ class AuroraViewModel(
         private val alarmRepository: AlarmRepository,
         private val weatherRepository: WeatherRepository,
         private val layoutRepository: LayoutRepository,
+        private val locationRepository: LocationRepository,
         private val hasNotificationAccess: () -> Boolean
     ) : ViewModelProvider.Factory {
         override fun <T : ViewModel> create(modelClass: Class<T>): T {
@@ -187,6 +194,7 @@ class AuroraViewModel(
                 alarmRepository,
                 weatherRepository,
                 layoutRepository,
+                locationRepository,
                 hasNotificationAccess
             ) as T
         }

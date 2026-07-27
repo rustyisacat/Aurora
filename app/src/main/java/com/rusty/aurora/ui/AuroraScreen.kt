@@ -68,6 +68,7 @@ fun AuroraScreen(
     onCopyDashboardUrl: (String) -> Unit,
     onRequestNotificationAccess: () -> Unit,
     onRequestCalendarAccess: () -> Unit,
+    onRequestLocationAccess: () -> Unit,
     onImportCustomSound: () -> Unit,
     onCustomizeDashboard: () -> Unit,
     modifier: Modifier = Modifier
@@ -101,6 +102,14 @@ fun AuroraScreen(
                     message = "Calendar access is off - today's events will read empty until it's granted.",
                     buttonLabel = "Grant Calendar Access",
                     onGrant = onRequestCalendarAccess
+                )
+            }
+            if (!uiState.hasLocationPermission) {
+                PermissionCard(
+                    message = "Location access is off - weather falls back to a fixed location " +
+                        "until it's granted, instead of following the phone automatically.",
+                    buttonLabel = "Grant Location Access",
+                    onGrant = onRequestLocationAccess
                 )
             }
 

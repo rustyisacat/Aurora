@@ -23,10 +23,10 @@ import com.rusty.aurora.util.NotificationAccessUtil
 
 /**
  * Thin shell: wires the ViewModel to Compose and forwards the platform
- * calls it can't own itself (clipboard, Settings intent, the calendar
- * permission dialog, the sound machine's custom-file picker). Everything
- * else - server lifecycle, battery/notification/calendar/alarm/weather
- * state - lives in [AuroraViewModel] and the repositories behind it.
+ * calls it can't own itself (clipboard, Settings intent, the calendar and
+ * location permission dialogs, the sound machine's custom-file picker).
+ * Everything else - server lifecycle, battery/notification/calendar/alarm/
+ * weather state - lives in [AuroraViewModel] and the repositories behind it.
  *
  * Custom sound import is handled directly here rather than through
  * AuroraViewModel, same as clipboard/Settings-intent above - it's a
@@ -45,6 +45,7 @@ class MainActivity : ComponentActivity() {
             alarmRepository = container.alarmRepository,
             weatherRepository = container.weatherRepository,
             layoutRepository = container.layoutRepository,
+            locationRepository = container.locationRepository,
             hasNotificationAccess = { NotificationAccessUtil.isNotificationAccessGranted(this) }
         )
     }
@@ -54,6 +55,13 @@ class MainActivity : ComponentActivity() {
             // Granted or denied, just refresh state - a denial should never crash
             // or need special-casing here, CalendarRepository already degrades to
             // an empty event list on its own.
+            viewModel.refreshPermissionState()
+        }
+
+    private val locationPermissionLauncher =
+        registerForActivityResult(ActivityResultContracts.RequestPermission()) {
+            // Same as calendar above - a denial just leaves weather on its fixed
+            // fallback coordinate, never a crash.
             viewModel.refreshPermissionState()
         }
 
@@ -89,6 +97,7 @@ class MainActivity : ComponentActivity() {
                         onCopyDashboardUrl = ::copyDashboardUrlToClipboard,
                         onRequestNotificationAccess = ::openNotificationAccessSettings,
                         onRequestCalendarAccess = ::requestCalendarPermission,
+                        onRequestLocationAccess = ::requestLocationPermission,
                         onImportCustomSound = ::launchCustomSoundPicker,
                         onCustomizeDashboard = { showCustomizeScreen = true }
                     )
@@ -99,8 +108,9 @@ class MainActivity : ComponentActivity() {
 
     override fun onResume() {
         super.onResume()
-        // Notification access and calendar access are both granted outside this
-        // screen (system Settings / the permission dialog), so re-check on return.
+        // Notification, calendar, and location access are all granted outside
+        // this screen (system Settings / the permission dialogs), so re-check
+        // on return.
         viewModel.refreshPermissionState()
     }
 
@@ -115,6 +125,10 @@ class MainActivity : ComponentActivity() {
 
     private fun requestCalendarPermission() {
         calendarPermissionLauncher.launch(Manifest.permission.READ_CALENDAR)
+    }
+
+    private fun requestLocationPermission() {
+        locationPermissionLauncher.launch(Manifest.permission.ACCESS_COARSE_LOCATION)
     }
 
     private fun launchCustomSoundPicker() {

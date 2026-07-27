@@ -12,6 +12,11 @@
          gracefully: CalendarRepository just reports an empty event list. -->
     <uses-permission android:name="android.permission.READ_CALENDAR" />
 
+    <!-- Dangerous permission - requested at runtime by MainActivity. Coarse is
+         plenty precise for weather; denial is handled gracefully by falling
+         back to WeatherConfig's fixed coordinate, same as before this existed. -->
+    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
+
     <application
         android:name=".AuroraApplication"
         android:allowBackup="true"

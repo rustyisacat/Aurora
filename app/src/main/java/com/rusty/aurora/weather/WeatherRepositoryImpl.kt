@@ -2,6 +2,7 @@ package com.rusty.aurora.weather
 
 import android.content.Context
 import android.util.Log
+import com.rusty.aurora.location.LocationRepository
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -15,15 +16,19 @@ import java.util.concurrent.atomic.AtomicBoolean
  * ViewModel-scoped lifecycle to borrow, so it owns its own background
  * scope for refreshes - same reasoning as why AuroraServerController owns
  * its own lifecycle rather than depending on one.
+ *
+ * Resolves the phone's current location on every refresh rather than once
+ * at construction - a new [OpenMeteoClient] is built per refresh with
+ * whatever coordinate [LocationRepository] currently reports, falling back
+ * to [WeatherConfig]'s fixed coordinate if location isn't available (no
+ * permission, or no fix ever obtained).
  */
 class WeatherRepositoryImpl(
     context: Context,
-    latitude: Double = WeatherConfig.LATITUDE,
-    longitude: Double = WeatherConfig.LONGITUDE
+    private val locationRepository: LocationRepository
 ) : WeatherRepository {
 
     private val networkStatusProvider = NetworkStatusProvider(context)
-    private val client = OpenMeteoClient(latitude, longitude)
     private val cache = WeatherCache(WeatherConfig.CACHE_DURATION_MILLIS)
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
@@ -44,7 +49,10 @@ class WeatherRepositoryImpl(
         scope.launch {
             try {
                 if (networkStatusProvider.isConnected()) {
-                    cache.store(client.fetchCurrentWeather())
+                    val location = locationRepository.getLastKnownLocation()
+                    val latitude = location?.latitude ?: WeatherConfig.LATITUDE
+                    val longitude = location?.longitude ?: WeatherConfig.LONGITUDE
+                    cache.store(OpenMeteoClient(latitude, longitude).fetchCurrentWeather())
                 }
                 // Offline: leave the existing cache (possibly still null) untouched.
             } catch (e: IOException) {

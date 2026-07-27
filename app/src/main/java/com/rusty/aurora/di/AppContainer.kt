@@ -19,6 +19,8 @@ import com.rusty.aurora.calendar.CalendarRepository
 import com.rusty.aurora.calendar.CalendarRepositoryImpl
 import com.rusty.aurora.layout.LayoutRepository
 import com.rusty.aurora.layout.LayoutRepositoryImpl
+import com.rusty.aurora.location.LocationRepository
+import com.rusty.aurora.location.LocationRepositoryImpl
 import com.rusty.aurora.notifications.NotificationCountRepository
 import com.rusty.aurora.notifications.NotificationCountRepositoryImpl
 import com.rusty.aurora.service.AuroraServerController
@@ -31,7 +33,7 @@ import com.rusty.aurora.weather.WeatherRepositoryImpl
 /**
  * Hand-rolled composition root.
  *
- * Seven repositories is still comfortably within "wire it by hand" territory -
+ * Eight repositories is still comfortably within "wire it by hand" territory -
  * a DI framework would add build time and APK size for no benefit yet.
  * Every class still takes its dependencies through its constructor, so the
  * option to introduce one later (or swap in fakes for tests) stays open.
@@ -46,7 +48,9 @@ class AppContainer(context: Context) {
 
     val alarmRepository: AlarmRepository = AlarmRepositoryImpl(context)
 
-    val weatherRepository: WeatherRepository = WeatherRepositoryImpl(context)
+    val locationRepository: LocationRepository = LocationRepositoryImpl(context)
+
+    val weatherRepository: WeatherRepository = WeatherRepositoryImpl(context, locationRepository)
 
     // Aurora never plays audio itself - it tracks desired sound machine
     // state and serves the raw bytes (SoundStreamRoute); the Echo Show's
