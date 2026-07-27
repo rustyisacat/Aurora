@@ -19,7 +19,13 @@ internal object OpenMeteoResponseParser {
             condition = WeatherConditionMapper.toCondition(response.current.weatherCode),
             high = response.daily.high.first().roundToInt(),
             low = response.daily.low.first().roundToInt(),
-            timezone = response.timezone
+            timezone = response.timezone,
+            sunrise = response.daily.sunrise.firstOrNull()?.let(::extractTimeOfDay),
+            sunset = response.daily.sunset.firstOrNull()?.let(::extractTimeOfDay)
         )
     }
+
+    /** "2026-07-27T06:15" -> "06:15" */
+    private fun extractTimeOfDay(isoDateTime: String): String? =
+        isoDateTime.substringAfter('T', missingDelimiterValue = "").ifEmpty { null }
 }

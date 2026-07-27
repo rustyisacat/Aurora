@@ -315,6 +315,12 @@ private fun WeatherCard(uiState: AuroraUiState) {
                 LabeledInline("H", "${weather.high}°")
                 LabeledInline("L", "${weather.low}°")
             }
+            if (weather.sunrise != null && weather.sunset != null) {
+                Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+                    LabeledInline("Sunrise", formatTime12h(weather.sunrise))
+                    LabeledInline("Sunset", formatTime12h(weather.sunset))
+                }
+            }
         }
     }
 }

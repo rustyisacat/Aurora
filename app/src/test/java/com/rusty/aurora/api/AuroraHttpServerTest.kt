@@ -195,7 +195,10 @@ class AuroraHttpServerTest {
         val baseUrl = startServer(
             calendarEvents = listOf(CalendarEvent(title = "School", start = "08:00", end = "15:00", allDay = false)),
             nextAlarm = NextAlarm(time = "07:00", enabled = true),
-            weather = WeatherSnapshot(temperature = 74, condition = "Clear", high = 86, low = 68, timezone = "America/New_York"),
+            weather = WeatherSnapshot(
+                temperature = 74, condition = "Clear", high = 86, low = 68,
+                timezone = "America/New_York", sunrise = "06:15", sunset = "20:42"
+            ),
             notificationGroups = listOf(NotificationGroup(app = "Discord", count = 3))
         )
         val connection = get("$baseUrl/dashboard")
@@ -209,7 +212,7 @@ class AuroraHttpServerTest {
                 """"nextAlarm":{"time":"07:00","enabled":true},""" +
                 """"calendar":[{"title":"School","start":"08:00","end":"15:00","allDay":false}],""" +
                 """"calendarShowsTomorrow":false,""" +
-                """"weather":{"temperature":74,"condition":"Clear","high":86,"low":68,"timezone":"America/New_York"},""" +
+                """"weather":{"temperature":74,"condition":"Clear","high":86,"low":68,"timezone":"America/New_York","sunrise":"06:15","sunset":"20:42"},""" +
                 """"soundMachine":{"playing":false,"sound":null,"volume":50,"sleepTimerMinutes":null},""" +
                 DEFAULT_LAYOUT_JSON,
             body

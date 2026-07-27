@@ -18,7 +18,7 @@ internal class OpenMeteoClient(
             "https://api.open-meteo.com/v1/forecast" +
                 "?latitude=$latitude&longitude=$longitude" +
                 "&current=temperature_2m,weather_code" +
-                "&daily=temperature_2m_max,temperature_2m_min" +
+                "&daily=temperature_2m_max,temperature_2m_min,sunrise,sunset" +
                 "&temperature_unit=fahrenheit" +
                 "&timezone=auto" +
                 "&forecast_days=1"

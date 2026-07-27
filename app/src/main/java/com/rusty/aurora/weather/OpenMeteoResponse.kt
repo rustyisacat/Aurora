@@ -22,6 +22,11 @@ internal data class OpenMeteoResponse(
     @Serializable
     data class DailyBlock(
         @SerialName("temperature_2m_max") val high: List<Double>,
-        @SerialName("temperature_2m_min") val low: List<Double>
+        @SerialName("temperature_2m_min") val low: List<Double>,
+        // ISO 8601 local datetimes (e.g. "2026-07-27T06:15") - already in
+        // whatever timezone this response's own `timezone` field names,
+        // thanks to &timezone=auto, so no conversion is needed here.
+        val sunrise: List<String> = emptyList(),
+        val sunset: List<String> = emptyList()
     )
 }

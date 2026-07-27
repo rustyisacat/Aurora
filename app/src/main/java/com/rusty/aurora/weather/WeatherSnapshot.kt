@@ -12,5 +12,10 @@ data class WeatherSnapshot(
     // snapshot was fetched for - the dashboard's clock uses this so it
     // always matches wherever the phone actually is, not just whatever
     // system timezone the display device happens to be set to.
-    val timezone: String
+    val timezone: String,
+    // "HH:mm" 24-hour, same convention as NextAlarm.time/CalendarEvent.start -
+    // null only if Open-Meteo's response omitted them, which shouldn't
+    // happen in practice since the request always asks for both.
+    val sunrise: String? = null,
+    val sunset: String? = null
 )

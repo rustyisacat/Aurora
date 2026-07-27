@@ -6,7 +6,38 @@ import org.junit.Test
 class OpenMeteoResponseParserTest {
 
     @Test
-    fun `parses temperature, condition, high, low, and timezone from a well-formed response`() {
+    fun `parses temperature, condition, high, low, timezone, sunrise, and sunset from a well-formed response`() {
+        val json = """
+            {
+              "timezone": "America/New_York",
+              "current": { "temperature_2m": 74.3, "weather_code": 0 },
+              "daily": {
+                "temperature_2m_max": [86.1],
+                "temperature_2m_min": [68.4],
+                "sunrise": ["2026-07-27T06:15"],
+                "sunset": ["2026-07-27T20:42"]
+              }
+            }
+        """.trimIndent()
+
+        val result = OpenMeteoResponseParser.parse(json)
+
+        assertEquals(
+            WeatherSnapshot(
+                temperature = 74,
+                condition = "Clear",
+                high = 86,
+                low = 68,
+                timezone = "America/New_York",
+                sunrise = "06:15",
+                sunset = "20:42"
+            ),
+            result
+        )
+    }
+
+    @Test
+    fun `sunrise and sunset are null when the response omits them`() {
         val json = """
             {
               "timezone": "America/New_York",
@@ -20,10 +51,8 @@ class OpenMeteoResponseParserTest {
 
         val result = OpenMeteoResponseParser.parse(json)
 
-        assertEquals(
-            WeatherSnapshot(temperature = 74, condition = "Clear", high = 86, low = 68, timezone = "America/New_York"),
-            result
-        )
+        assertEquals(null, result.sunrise)
+        assertEquals(null, result.sunset)
     }
 
     @Test
