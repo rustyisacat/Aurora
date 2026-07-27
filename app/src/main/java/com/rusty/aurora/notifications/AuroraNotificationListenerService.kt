@@ -1,5 +1,6 @@
 package com.rusty.aurora.notifications
 
+import android.content.pm.PackageManager
 import android.service.notification.NotificationListenerService
 import android.service.notification.StatusBarNotification
 import com.rusty.aurora.AuroraApplication
@@ -11,8 +12,8 @@ import com.rusty.aurora.AuroraApplication
  * [AuroraApplication]'s container instead - the one deliberate exception
  * to constructor injection, forced by the platform's component model.
  *
- * Only the notification *count* is read here for v0.1 - titles, text, and
- * package names are never touched.
+ * Only counts grouped by app are read here - titles and message text are
+ * never touched.
  */
 class AuroraNotificationListenerService : NotificationListenerService() {
 
@@ -21,20 +22,36 @@ class AuroraNotificationListenerService : NotificationListenerService() {
 
     override fun onListenerConnected() {
         super.onListenerConnected()
-        updateCount()
+        updateGroups()
     }
 
     override fun onNotificationPosted(sbn: StatusBarNotification) {
-        updateCount()
+        updateGroups()
     }
 
     override fun onNotificationRemoved(sbn: StatusBarNotification) {
-        updateCount()
+        updateGroups()
     }
 
-    private fun updateCount() {
+    private fun updateGroups() {
         // Recomputed from activeNotifications rather than incremented/decremented,
-        // so the count can't drift out of sync from a missed callback.
-        repository.setCount(activeNotifications?.size ?: 0)
+        // so counts can't drift out of sync from a missed callback.
+        val packageNames = activeNotifications?.map { it.packageName } ?: emptyList()
+        repository.update(NotificationGrouper.group(packageNames, ::resolveAppLabel))
     }
+
+    /**
+     * Falls back to the raw package name on any resolution failure - API 30+
+     * package-visibility filtering could plausibly hide some apps' labels
+     * from us even though we already have their StatusBarNotification (an
+     * untested edge case), and a degraded label beats crashing the listener.
+     */
+    private fun resolveAppLabel(packageName: String): String =
+        try {
+            packageManager.getApplicationLabel(packageManager.getApplicationInfo(packageName, 0)).toString()
+        } catch (e: PackageManager.NameNotFoundException) {
+            packageName
+        } catch (e: SecurityException) {
+            packageName
+        }
 }

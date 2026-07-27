@@ -10,4 +10,7 @@ class AlarmRepositoryImpl(context: Context) : AlarmRepository {
 
     override fun getNextAlarm(): NextAlarm? =
         AlarmMapper.toNextAlarm(alarmManager.nextAlarmClock?.triggerTime)
+
+    override fun getNextAlarmTriggerMillis(): Long? =
+        alarmManager.nextAlarmClock?.triggerTime
 }

@@ -41,7 +41,7 @@ class AuroraHttpServer(
         // dashboard's static files end up being served (file://, a local
         // static server, ...) and it may change.
         response.addHeader("Access-Control-Allow-Origin", "*")
-        response.addHeader("Access-Control-Allow-Methods", "GET, OPTIONS")
+        response.addHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
         response.addHeader("Access-Control-Allow-Headers", "Content-Type")
         response.addHeader("Access-Control-Allow-Private-Network", "true")
         return response

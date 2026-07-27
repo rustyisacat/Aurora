@@ -3,7 +3,10 @@ package com.rusty.aurora.ui
 import android.Manifest
 import android.content.ClipData
 import android.content.ClipboardManager
+import android.content.Intent
+import android.net.Uri
 import android.os.Bundle
+import android.provider.OpenableColumns
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.result.contract.ActivityResultContracts
@@ -18,9 +21,14 @@ import com.rusty.aurora.util.NotificationAccessUtil
 /**
  * Thin shell: wires the ViewModel to Compose and forwards the platform
  * calls it can't own itself (clipboard, Settings intent, the calendar
- * permission dialog). Everything else - server lifecycle, battery/
- * notification/calendar/alarm/weather state - lives in [AuroraViewModel]
- * and the repositories behind it.
+ * permission dialog, the sound machine's custom-file picker). Everything
+ * else - server lifecycle, battery/notification/calendar/alarm/weather
+ * state - lives in [AuroraViewModel] and the repositories behind it.
+ *
+ * Custom sound import is handled directly here rather than through
+ * AuroraViewModel, same as clipboard/Settings-intent above - it's a
+ * one-shot platform action (Storage Access Framework), not ongoing UI
+ * state to track.
  */
 class MainActivity : ComponentActivity() {
 
@@ -45,6 +53,11 @@ class MainActivity : ComponentActivity() {
             viewModel.refreshPermissionState()
         }
 
+    private val importSoundLauncher =
+        registerForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
+            if (uri != null) importCustomSound(uri)
+        }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContent {
@@ -56,7 +69,8 @@ class MainActivity : ComponentActivity() {
                     onStopServer = viewModel::stopServer,
                     onCopyDashboardUrl = ::copyDashboardUrlToClipboard,
                     onRequestNotificationAccess = ::openNotificationAccessSettings,
-                    onRequestCalendarAccess = ::requestCalendarPermission
+                    onRequestCalendarAccess = ::requestCalendarPermission,
+                    onImportCustomSound = ::launchCustomSoundPicker
                 )
             }
         }
@@ -81,4 +95,21 @@ class MainActivity : ComponentActivity() {
     private fun requestCalendarPermission() {
         calendarPermissionLauncher.launch(Manifest.permission.READ_CALENDAR)
     }
+
+    private fun launchCustomSoundPicker() {
+        importSoundLauncher.launch(
+            arrayOf("audio/mpeg", "audio/ogg", "audio/flac", "audio/x-flac", "audio/wav", "audio/x-wav")
+        )
+    }
+
+    private fun importCustomSound(uri: Uri) {
+        contentResolver.takePersistableUriPermission(uri, Intent.FLAG_GRANT_READ_URI_PERMISSION)
+        val displayName = queryDisplayName(uri) ?: uri.lastPathSegment ?: "Custom sound"
+        (application as AuroraApplication).container.soundRepository.importCustomSound(uri, displayName)
+    }
+
+    private fun queryDisplayName(uri: Uri): String? =
+        contentResolver.query(uri, arrayOf(OpenableColumns.DISPLAY_NAME), null, null, null)?.use { cursor ->
+            if (cursor.moveToFirst()) cursor.getString(0) else null
+        }
 }

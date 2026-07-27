@@ -5,6 +5,7 @@ import com.rusty.aurora.battery.BatteryRepository
 import com.rusty.aurora.calendar.CalendarRepository
 import com.rusty.aurora.model.DashboardResponse
 import com.rusty.aurora.notifications.NotificationCountRepository
+import com.rusty.aurora.sound.SoundRepository
 import com.rusty.aurora.weather.WeatherRepository
 import fi.iki.elonen.NanoHTTPD
 import fi.iki.elonen.NanoHTTPD.Response.Status
@@ -16,7 +17,8 @@ class DashboardRoute(
     private val notificationCountRepository: NotificationCountRepository,
     private val calendarRepository: CalendarRepository,
     private val alarmRepository: AlarmRepository,
-    private val weatherRepository: WeatherRepository
+    private val weatherRepository: WeatherRepository,
+    private val soundRepository: SoundRepository
 ) : Route {
 
     // encodeDefaults=true keeps nextAlarm/weather present as explicit JSON
@@ -32,9 +34,11 @@ class DashboardRoute(
             battery = batteryRepository.getBatteryLevelPercent(),
             charging = batteryRepository.isCharging(),
             notifications = notificationCountRepository.notificationCount.value,
+            notificationGroups = notificationCountRepository.notificationGroups.value,
             nextAlarm = alarmRepository.getNextAlarm(),
             calendar = calendarRepository.getTodayEvents(),
-            weather = weatherRepository.getWeather()
+            weather = weatherRepository.getWeather(),
+            soundMachine = soundRepository.getState()
         )
         return NanoHTTPD.newFixedLengthResponse(
             Status.OK,

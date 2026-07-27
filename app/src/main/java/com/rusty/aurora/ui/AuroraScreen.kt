@@ -32,6 +32,7 @@ fun AuroraScreen(
     onCopyDashboardUrl: (String) -> Unit,
     onRequestNotificationAccess: () -> Unit,
     onRequestCalendarAccess: () -> Unit,
+    onImportCustomSound: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     Scaffold(
@@ -92,6 +93,18 @@ fun AuroraScreen(
                 modifier = Modifier.fillMaxWidth()
             ) {
                 Text("Copy Dashboard URL")
+            }
+
+            // Custom sound import needs an on-device file picker (Storage Access
+            // Framework), which only this screen can launch - the web dashboard
+            // has no access to the phone's filesystem. Playback control itself
+            // stays on the dashboard; this is a one-time setup action, which is
+            // what this screen is for.
+            OutlinedButton(
+                onClick = onImportCustomSound,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Text("Import Custom Sound")
             }
         }
     }

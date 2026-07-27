@@ -3,13 +3,16 @@ package com.rusty.aurora.notifications
 import kotlinx.coroutines.flow.StateFlow
 
 /**
- * Live count of currently active notifications.
- *
- * Exposed as a [StateFlow] rather than a plain getter because the count
- * changes asynchronously, pushed by [AuroraNotificationListenerService]
+ * Live notification state, exposed as [StateFlow]s rather than plain getters
+ * because it changes asynchronously, pushed by [AuroraNotificationListenerService]
  * callbacks rather than pulled by the HTTP server or UI.
+ *
+ * [notificationCount] and [notificationGroups] are always updated together
+ * via [update] - count is derived as the sum of the groups, so the two can
+ * never drift out of sync with each other.
  */
 interface NotificationCountRepository {
     val notificationCount: StateFlow<Int>
-    fun setCount(count: Int)
+    val notificationGroups: StateFlow<List<NotificationGroup>>
+    fun update(groups: List<NotificationGroup>)
 }
