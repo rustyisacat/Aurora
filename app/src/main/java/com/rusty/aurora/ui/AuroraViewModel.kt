@@ -13,6 +13,7 @@ import com.rusty.aurora.layout.TileConfig
 import com.rusty.aurora.layout.TileSize
 import com.rusty.aurora.location.LocationRepository
 import com.rusty.aurora.model.ServerStatus
+import com.rusty.aurora.network.HomeNetworkMonitor
 import com.rusty.aurora.notifications.NotificationCountRepository
 import com.rusty.aurora.profile.UserProfileRepository
 import com.rusty.aurora.service.AuroraServerController
@@ -38,6 +39,8 @@ data class AuroraUiState(
     val hasNotificationAccess: Boolean = false,
     val hasCalendarPermission: Boolean = false,
     val hasLocationPermission: Boolean = false,
+    val hasPostNotificationsPermission: Boolean = false,
+    val isOnHomeNetwork: Boolean = false,
     val calendarEvents: List<CalendarEvent> = emptyList(),
     val nextAlarm: NextAlarm? = null,
     val weather: WeatherSnapshot? = null,
@@ -58,7 +61,9 @@ class AuroraViewModel(
     private val layoutRepository: LayoutRepository,
     private val locationRepository: LocationRepository,
     private val userProfileRepository: UserProfileRepository,
-    private val hasNotificationAccess: () -> Boolean
+    private val homeNetworkMonitor: HomeNetworkMonitor,
+    private val hasNotificationAccess: () -> Boolean,
+    private val hasPostNotificationsPermission: () -> Boolean
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(
@@ -69,31 +74,27 @@ class AuroraViewModel(
     init {
         observeServerStatus()
         observeNotificationCount()
+        observeHomeNetwork()
         pollDeviceState()
-        startServer()
-    }
-
-    fun startServer() {
-        serverController.start()
-        _uiState.update { it.copy(localIpAddress = NetworkUtil.getLocalIpAddress()) }
-    }
-
-    fun stopServer() {
-        serverController.stop()
+        // Starting/stopping the server itself is AuroraBackgroundService's
+        // job now, driven by homeNetworkMonitor - this ViewModel only
+        // observes serverController.status for display, it doesn't start
+        // or stop it directly.
     }
 
     /**
      * Called from Activity#onResume and the calendar/location permission
      * callbacks - notification access (system Settings), calendar access,
-     * and location access (both runtime dialogs) are all granted outside
-     * this ViewModel's control.
+     * location access, and the notification-post permission (all three
+     * runtime dialogs) are all granted outside this ViewModel's control.
      */
     fun refreshPermissionState() {
         _uiState.update {
             it.copy(
                 hasNotificationAccess = hasNotificationAccess(),
                 hasCalendarPermission = calendarRepository.hasCalendarPermission(),
-                hasLocationPermission = locationRepository.hasLocationPermission()
+                hasLocationPermission = locationRepository.hasLocationPermission(),
+                hasPostNotificationsPermission = hasPostNotificationsPermission()
             )
         }
     }
@@ -156,6 +157,16 @@ class AuroraViewModel(
         }
     }
 
+    /** AuroraBackgroundService is the one actually starting/stopping the
+     *  server off this same signal - this is purely for the status card. */
+    private fun observeHomeNetwork() {
+        viewModelScope.launch {
+            homeNetworkMonitor.isOnHomeNetwork.collect { onHomeNetwork ->
+                _uiState.update { it.copy(isOnHomeNetwork = onHomeNetwork) }
+            }
+        }
+    }
+
     /**
      * None of battery, calendar, alarm, or weather have a cheap "observe changes"
      * API to replace this with, so all four are refreshed together on a simple
@@ -174,6 +185,8 @@ class AuroraViewModel(
                         hasNotificationAccess = hasNotificationAccess(),
                         hasCalendarPermission = calendarRepository.hasCalendarPermission(),
                         hasLocationPermission = locationRepository.hasLocationPermission(),
+                        hasPostNotificationsPermission = hasPostNotificationsPermission(),
+                        localIpAddress = NetworkUtil.getLocalIpAddress(),
                         calendarEvents = calendarRepository.getTodayEvents(),
                         nextAlarm = alarmRepository.getNextAlarm(),
                         weather = weatherRepository.getWeather()
@@ -194,7 +207,9 @@ class AuroraViewModel(
         private val layoutRepository: LayoutRepository,
         private val locationRepository: LocationRepository,
         private val userProfileRepository: UserProfileRepository,
-        private val hasNotificationAccess: () -> Boolean
+        private val homeNetworkMonitor: HomeNetworkMonitor,
+        private val hasNotificationAccess: () -> Boolean,
+        private val hasPostNotificationsPermission: () -> Boolean
     ) : ViewModelProvider.Factory {
         override fun <T : ViewModel> create(modelClass: Class<T>): T {
             @Suppress("UNCHECKED_CAST")
@@ -208,7 +223,9 @@ class AuroraViewModel(
                 layoutRepository,
                 locationRepository,
                 userProfileRepository,
-                hasNotificationAccess
+                homeNetworkMonitor,
+                hasNotificationAccess,
+                hasPostNotificationsPermission
             ) as T
         }
     }

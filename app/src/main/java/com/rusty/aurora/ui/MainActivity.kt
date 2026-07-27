@@ -5,6 +5,7 @@ import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.Intent
 import android.net.Uri
+import android.os.Build
 import android.os.Bundle
 import android.provider.OpenableColumns
 import androidx.activity.ComponentActivity
@@ -16,17 +17,27 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.core.app.NotificationManagerCompat
 import androidx.core.content.getSystemService
 import com.rusty.aurora.AuroraApplication
+import com.rusty.aurora.service.AuroraBackgroundService
 import com.rusty.aurora.ui.theme.AuroraTheme
 import com.rusty.aurora.util.NotificationAccessUtil
 
 /**
  * Thin shell: wires the ViewModel to Compose and forwards the platform
- * calls it can't own itself (clipboard, Settings intent, the calendar and
- * location permission dialogs, the sound machine's custom-file picker).
- * Everything else - server lifecycle, battery/notification/calendar/alarm/
- * weather state - lives in [AuroraViewModel] and the repositories behind it.
+ * calls it can't own itself (clipboard, Settings intent, the calendar/
+ * location/notification permission dialogs, the sound machine's
+ * custom-file picker). Everything else - server lifecycle, battery/
+ * notification/calendar/alarm/weather state - lives in [AuroraViewModel]
+ * and the repositories behind it.
+ *
+ * Also starts [AuroraBackgroundService] - a foreground Activity is always
+ * exempt from Android 12+'s restrictions on starting foreground services,
+ * which is why this happens here rather than in AuroraApplication.onCreate
+ * (see that service's doc comment). Calling start() again on an
+ * already-running service is a harmless no-op, so this doesn't need any
+ * "only once" guard.
  *
  * Custom sound import is handled directly here rather than through
  * AuroraViewModel, same as clipboard/Settings-intent above - it's a
@@ -47,7 +58,9 @@ class MainActivity : ComponentActivity() {
             layoutRepository = container.layoutRepository,
             locationRepository = container.locationRepository,
             userProfileRepository = container.userProfileRepository,
-            hasNotificationAccess = { NotificationAccessUtil.isNotificationAccessGranted(this) }
+            homeNetworkMonitor = container.homeNetworkMonitor,
+            hasNotificationAccess = { NotificationAccessUtil.isNotificationAccessGranted(this) },
+            hasPostNotificationsPermission = { NotificationManagerCompat.from(this).areNotificationsEnabled() }
         )
     }
 
@@ -66,6 +79,14 @@ class MainActivity : ComponentActivity() {
             viewModel.refreshPermissionState()
         }
 
+    private val postNotificationsPermissionLauncher =
+        registerForActivityResult(ActivityResultContracts.RequestPermission()) {
+            // A denial here doesn't stop AuroraBackgroundService or the server -
+            // Android just silently drops the notification, which is only a
+            // visibility concern, not a functional one.
+            viewModel.refreshPermissionState()
+        }
+
     private val importSoundLauncher =
         registerForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
             if (uri != null) importCustomSound(uri)
@@ -73,6 +94,7 @@ class MainActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        AuroraBackgroundService.start(this)
         setContent {
             val uiState by viewModel.uiState.collectAsState()
             // Three screens, no real back stack to speak of - plain booleans
@@ -109,12 +131,11 @@ class MainActivity : ComponentActivity() {
                     else -> {
                         AuroraScreen(
                             uiState = uiState,
-                            onStartServer = viewModel::startServer,
-                            onStopServer = viewModel::stopServer,
                             onCopyDashboardUrl = ::copyDashboardUrlToClipboard,
                             onRequestNotificationAccess = ::openNotificationAccessSettings,
                             onRequestCalendarAccess = ::requestCalendarPermission,
                             onRequestLocationAccess = ::requestLocationPermission,
+                            onRequestPostNotificationsPermission = ::requestPostNotificationsPermission,
                             onImportCustomSound = ::launchCustomSoundPicker,
                             onCustomizeDashboard = { showCustomizeScreen = true },
                             onChangeName = { forceNameEntry = true }
@@ -127,9 +148,9 @@ class MainActivity : ComponentActivity() {
 
     override fun onResume() {
         super.onResume()
-        // Notification, calendar, and location access are all granted outside
-        // this screen (system Settings / the permission dialogs), so re-check
-        // on return.
+        // Notification access, calendar, location, and post-notifications are
+        // all granted outside this screen (system Settings / the permission
+        // dialogs), so re-check on return.
         viewModel.refreshPermissionState()
     }
 
@@ -148,6 +169,14 @@ class MainActivity : ComponentActivity() {
 
     private fun requestLocationPermission() {
         locationPermissionLauncher.launch(Manifest.permission.ACCESS_COARSE_LOCATION)
+    }
+
+    private fun requestPostNotificationsPermission() {
+        // POST_NOTIFICATIONS doesn't exist before API 33 - notifications are
+        // just always allowed there, so there's nothing to launch.
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            postNotificationsPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+        }
     }
 
     private fun launchCustomSoundPicker() {

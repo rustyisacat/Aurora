@@ -17,6 +17,18 @@
          back to WeatherConfig's fixed coordinate, same as before this existed. -->
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
 
+    <!-- AuroraBackgroundService keeps the HTTP server alive independent of
+         MainActivity, and needs to know whether the phone is on the home
+         Wi-Fi network (HomeNetworkMonitor) to decide whether to run it. -->
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_SPECIAL_USE" />
+
+    <!-- Dangerous on API 33+ (auto-granted below that) - requested at runtime by
+         MainActivity. Needed to show AuroraBackgroundService's persistent
+         notification; without it Android silently drops the notification but
+         the foreground service (and the server) still runs. -->
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+
     <application
         android:name=".AuroraApplication"
         android:allowBackup="true"
@@ -45,6 +57,27 @@
             <intent-filter>
                 <action android:name="android.service.notification.NotificationListenerService" />
             </intent-filter>
+        </service>
+
+        <!-- Started once from MainActivity (see its doc comment for why not
+             from AuroraApplication.onCreate) and kept alive with
+             START_STICKY from then on - this is what lets the HTTP server
+             survive the app being closed. connectedDevice looked like the
+             right fit at first (Aurora exists to interact with the Echo
+             Show), but the platform enforces it strictly: it requires
+             holding a Bluetooth/USB/NFC/IR/UWB or Wi-Fi-state-change
+             permission as proof of an actual paired-device connection,
+             none of which Aurora has any real use for since it talks to
+             the Echo Show over plain HTTP, not a paired protocol. specialUse
+             is the type actually meant for exactly this "doesn't fit the
+             others" case. -->
+        <service
+            android:name=".service.AuroraBackgroundService"
+            android:exported="false"
+            android:foregroundServiceType="specialUse">
+            <property
+                android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
+                android:value="Serves the bedside dashboard's data to the Echo Show over the home Wi-Fi network" />
         </service>
 
     </application>

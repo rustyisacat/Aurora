@@ -64,12 +64,11 @@ import com.rusty.aurora.ui.theme.AuroraTextTertiary
 @Composable
 fun AuroraScreen(
     uiState: AuroraUiState,
-    onStartServer: () -> Unit,
-    onStopServer: () -> Unit,
     onCopyDashboardUrl: (String) -> Unit,
     onRequestNotificationAccess: () -> Unit,
     onRequestCalendarAccess: () -> Unit,
     onRequestLocationAccess: () -> Unit,
+    onRequestPostNotificationsPermission: () -> Unit,
     onImportCustomSound: () -> Unit,
     onCustomizeDashboard: () -> Unit,
     onChangeName: () -> Unit,
@@ -114,27 +113,13 @@ fun AuroraScreen(
                     onGrant = onRequestLocationAccess
                 )
             }
-
-            Row(
-                horizontalArrangement = Arrangement.spacedBy(10.dp),
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Button(
-                    onClick = onStartServer,
-                    enabled = uiState.serverStatus != ServerStatus.RUNNING,
-                    shape = RoundedCornerShape(14.dp),
-                    modifier = Modifier.weight(1f)
-                ) {
-                    Text("Start Server")
-                }
-                OutlinedButton(
-                    onClick = onStopServer,
-                    enabled = uiState.serverStatus == ServerStatus.RUNNING,
-                    shape = RoundedCornerShape(14.dp),
-                    modifier = Modifier.weight(1f)
-                ) {
-                    Text("Stop Server")
-                }
+            if (!uiState.hasPostNotificationsPermission) {
+                PermissionCard(
+                    message = "Notifications are off - the background service that keeps the " +
+                        "dashboard fed still runs without it, but you won't see its status icon.",
+                    buttonLabel = "Allow Notifications",
+                    onGrant = onRequestPostNotificationsPermission
+                )
             }
 
             OutlinedButton(
@@ -201,14 +186,16 @@ private fun ScreenHeader(uiState: AuroraUiState) {
             "Aurora",
             style = MaterialTheme.typography.headlineMedium.copy(fontWeight = FontWeight.Bold)
         )
-        StatusDot(running = uiState.serverStatus == ServerStatus.RUNNING)
+        StatusDot(uiState)
     }
 }
 
 /** Same idea as the dashboard's .status-line dot: a quiet colored dot
- *  rather than a loud badge. */
+ *  rather than a loud badge. AuroraBackgroundService owns the actual
+ *  start/stop decision (see its doc comment) - this just reflects it. */
 @Composable
-private fun StatusDot(running: Boolean) {
+private fun StatusDot(uiState: AuroraUiState) {
+    val running = uiState.serverStatus == ServerStatus.RUNNING
     Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
         Box(
             modifier = Modifier
@@ -219,11 +206,17 @@ private fun StatusDot(running: Boolean) {
                 )
         )
         Text(
-            if (running) "Running" else "Stopped",
+            serverStatusLabel(uiState),
             style = MaterialTheme.typography.labelMedium,
             color = AuroraTextSecondary
         )
     }
+}
+
+private fun serverStatusLabel(uiState: AuroraUiState): String = when {
+    uiState.serverStatus == ServerStatus.RUNNING -> "Running"
+    uiState.isOnHomeNetwork -> "Starting…"
+    else -> "Idle - away from home Wi-Fi"
 }
 
 /** One shared card shape - icon-slot + uppercase title, then whatever
@@ -270,7 +263,8 @@ private fun AuroraCard(
 @Composable
 private fun ServerStatusCard(uiState: AuroraUiState) {
     AuroraCard(title = "Aurora Server", icon = Icons.Outlined.Dns) {
-        LabeledRow("Status", uiState.serverStatus.name.lowercase().replaceFirstChar(Char::uppercase))
+        LabeledRow("Status", serverStatusLabel(uiState))
+        LabeledRow("Home Wi-Fi", if (uiState.isOnHomeNetwork) "Connected" else "Not connected")
         LabeledRow("Address", uiState.localIpAddress?.let { "$it:${uiState.port}" } ?: "Unavailable")
     }
 }
