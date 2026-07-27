@@ -61,8 +61,8 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContent {
-            AuroraTheme {
-                val uiState by viewModel.uiState.collectAsState()
+            val uiState by viewModel.uiState.collectAsState()
+            AuroraTheme(weatherCondition = uiState.weather?.condition) {
                 AuroraScreen(
                     uiState = uiState,
                     onStartServer = viewModel::startServer,
