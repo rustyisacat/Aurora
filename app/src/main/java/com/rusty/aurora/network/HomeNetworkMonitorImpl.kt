@@ -12,13 +12,18 @@ import kotlinx.coroutines.flow.asStateFlow
 
 /**
  * Watches for Wi-Fi connectivity changes and reports whether the phone is
- * currently on the home subnet (see HomeNetworkConfig). Reuses
- * NetworkUtil.getLocalIpAddress() - the same "what's my own IP" read
- * already used to show the dashboard URL - rather than reading the Wi-Fi
+ * currently on the home subnet - user-configured via HomeNetworkRepository
+ * (first-launch prompt, or "Change Home Network" later), not hardcoded,
+ * since this app is public on GitHub and a fixed subnet would only ever
+ * match one person's router. Uses NetworkUtil.getWifiIpAddress() - reading
+ * the active Wi-Fi network's link address directly - rather than the Wi-Fi
  * SSID, which needs a location permission this check has no other reason
  * to require.
  */
-class HomeNetworkMonitorImpl(context: Context) : HomeNetworkMonitor {
+class HomeNetworkMonitorImpl(
+    context: Context,
+    private val homeNetworkRepository: HomeNetworkRepository
+) : HomeNetworkMonitor {
 
     private val connectivityManager =
         context.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
@@ -33,9 +38,15 @@ class HomeNetworkMonitorImpl(context: Context) : HomeNetworkMonitor {
     }
 
     private fun refresh() {
-        val ip = NetworkUtil.getLocalIpAddress()
-        _isOnHomeNetwork.value = ip?.startsWith(HomeNetworkConfig.HOME_SUBNET_PREFIX) == true
+        val homePrefix = homeNetworkRepository.getHomeSubnetPrefix()
+        _isOnHomeNetwork.value = homePrefix != null &&
+            NetworkUtil.getWifiIpAddress(connectivityManager)?.startsWith(homePrefix) == true
     }
+
+    override fun recheck() = refresh()
+
+    override fun currentWifiSubnetPrefix(): String? =
+        NetworkUtil.getWifiIpAddress(connectivityManager)?.let(NetworkUtil::subnetPrefixOf)
 
     override fun start() {
         val request = NetworkRequest.Builder()

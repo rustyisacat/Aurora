@@ -14,6 +14,7 @@ import com.rusty.aurora.layout.TileSize
 import com.rusty.aurora.location.LocationRepository
 import com.rusty.aurora.model.ServerStatus
 import com.rusty.aurora.network.HomeNetworkMonitor
+import com.rusty.aurora.network.HomeNetworkRepository
 import com.rusty.aurora.notifications.NotificationCountRepository
 import com.rusty.aurora.profile.UserProfileRepository
 import com.rusty.aurora.service.AuroraServerController
@@ -41,6 +42,8 @@ data class AuroraUiState(
     val hasLocationPermission: Boolean = false,
     val hasPostNotificationsPermission: Boolean = false,
     val isOnHomeNetwork: Boolean = false,
+    val homeSubnetPrefix: String? = null,
+    val detectedWifiSubnetPrefix: String? = null,
     val calendarEvents: List<CalendarEvent> = emptyList(),
     val nextAlarm: NextAlarm? = null,
     val weather: WeatherSnapshot? = null,
@@ -62,12 +65,17 @@ class AuroraViewModel(
     private val locationRepository: LocationRepository,
     private val userProfileRepository: UserProfileRepository,
     private val homeNetworkMonitor: HomeNetworkMonitor,
+    private val homeNetworkRepository: HomeNetworkRepository,
     private val hasNotificationAccess: () -> Boolean,
     private val hasPostNotificationsPermission: () -> Boolean
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(
-        AuroraUiState(tileLayout = layoutRepository.getLayout(), userName = userProfileRepository.getUserName())
+        AuroraUiState(
+            tileLayout = layoutRepository.getLayout(),
+            userName = userProfileRepository.getUserName(),
+            homeSubnetPrefix = homeNetworkRepository.getHomeSubnetPrefix()
+        )
     )
     val uiState: StateFlow<AuroraUiState> = _uiState.asStateFlow()
 
@@ -141,6 +149,16 @@ class AuroraViewModel(
         _uiState.update { it.copy(userName = userProfileRepository.getUserName()) }
     }
 
+    /** Called from the first-launch home-network prompt, and from "Change
+     *  Home Network" later. Forces an immediate recheck - if the phone is
+     *  already sitting on the network just configured, no new Wi-Fi
+     *  connectivity event will ever fire to trigger one on its own. */
+    fun setHomeSubnetPrefix(prefix: String) {
+        homeNetworkRepository.setHomeSubnetPrefix(prefix)
+        _uiState.update { it.copy(homeSubnetPrefix = homeNetworkRepository.getHomeSubnetPrefix()) }
+        homeNetworkMonitor.recheck()
+    }
+
     private fun observeServerStatus() {
         viewModelScope.launch {
             serverController.status.collect { status ->
@@ -187,6 +205,7 @@ class AuroraViewModel(
                         hasLocationPermission = locationRepository.hasLocationPermission(),
                         hasPostNotificationsPermission = hasPostNotificationsPermission(),
                         localIpAddress = NetworkUtil.getLocalIpAddress(),
+                        detectedWifiSubnetPrefix = homeNetworkMonitor.currentWifiSubnetPrefix(),
                         calendarEvents = calendarRepository.getTodayEvents(),
                         nextAlarm = alarmRepository.getNextAlarm(),
                         weather = weatherRepository.getWeather()
@@ -208,6 +227,7 @@ class AuroraViewModel(
         private val locationRepository: LocationRepository,
         private val userProfileRepository: UserProfileRepository,
         private val homeNetworkMonitor: HomeNetworkMonitor,
+        private val homeNetworkRepository: HomeNetworkRepository,
         private val hasNotificationAccess: () -> Boolean,
         private val hasPostNotificationsPermission: () -> Boolean
     ) : ViewModelProvider.Factory {
@@ -224,6 +244,7 @@ class AuroraViewModel(
                 locationRepository,
                 userProfileRepository,
                 homeNetworkMonitor,
+                homeNetworkRepository,
                 hasNotificationAccess,
                 hasPostNotificationsPermission
             ) as T

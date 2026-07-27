@@ -23,6 +23,8 @@ import com.rusty.aurora.location.LocationRepository
 import com.rusty.aurora.location.LocationRepositoryImpl
 import com.rusty.aurora.network.HomeNetworkMonitor
 import com.rusty.aurora.network.HomeNetworkMonitorImpl
+import com.rusty.aurora.network.HomeNetworkRepository
+import com.rusty.aurora.network.HomeNetworkRepositoryImpl
 import com.rusty.aurora.notifications.NotificationCountRepository
 import com.rusty.aurora.notifications.NotificationCountRepositoryImpl
 import com.rusty.aurora.profile.UserProfileRepository
@@ -68,7 +70,9 @@ class AppContainer(context: Context) {
 
     val userProfileRepository: UserProfileRepository = UserProfileRepositoryImpl(context)
 
-    val homeNetworkMonitor: HomeNetworkMonitor = HomeNetworkMonitorImpl(context)
+    val homeNetworkRepository: HomeNetworkRepository = HomeNetworkRepositoryImpl(context)
+
+    val homeNetworkMonitor: HomeNetworkMonitor = HomeNetworkMonitorImpl(context, homeNetworkRepository)
 
     private val routes = listOf(
         HealthRoute(),

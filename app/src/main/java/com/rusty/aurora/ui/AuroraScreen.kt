@@ -72,6 +72,7 @@ fun AuroraScreen(
     onImportCustomSound: () -> Unit,
     onCustomizeDashboard: () -> Unit,
     onChangeName: () -> Unit,
+    onChangeHomeNetwork: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     Surface(modifier = modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
@@ -166,6 +167,16 @@ fun AuroraScreen(
                 Icon(Icons.Outlined.Edit, contentDescription = null, modifier = Modifier.size(18.dp))
                 Spacer(Modifier.width(8.dp))
                 Text("Change Name")
+            }
+
+            OutlinedButton(
+                onClick = onChangeHomeNetwork,
+                shape = RoundedCornerShape(14.dp),
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Icon(Icons.Outlined.Dns, contentDescription = null, modifier = Modifier.size(18.dp))
+                Spacer(Modifier.width(8.dp))
+                Text("Change Home Network")
             }
 
             Spacer(Modifier.height(4.dp))

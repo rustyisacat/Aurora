@@ -59,6 +59,7 @@ class MainActivity : ComponentActivity() {
             locationRepository = container.locationRepository,
             userProfileRepository = container.userProfileRepository,
             homeNetworkMonitor = container.homeNetworkMonitor,
+            homeNetworkRepository = container.homeNetworkRepository,
             hasNotificationAccess = { NotificationAccessUtil.isNotificationAccessGranted(this) },
             hasPostNotificationsPermission = { NotificationManagerCompat.from(this).areNotificationsEnabled() }
         )
@@ -103,6 +104,7 @@ class MainActivity : ComponentActivity() {
             // screen, then come back."
             var showCustomizeScreen by remember { mutableStateOf(false) }
             var forceNameEntry by remember { mutableStateOf(false) }
+            var forceHomeNetworkEntry by remember { mutableStateOf(false) }
 
             AuroraTheme(weatherCondition = uiState.weather?.condition) {
                 when {
@@ -115,6 +117,15 @@ class MainActivity : ComponentActivity() {
                             onSubmit = { name ->
                                 viewModel.setUserName(name)
                                 forceNameEntry = false
+                            }
+                        )
+                    }
+                    uiState.homeSubnetPrefix.isNullOrBlank() || forceHomeNetworkEntry -> {
+                        HomeNetworkEntryScreen(
+                            detectedSubnetPrefix = uiState.detectedWifiSubnetPrefix,
+                            onSubmit = { prefix ->
+                                viewModel.setHomeSubnetPrefix(prefix)
+                                forceHomeNetworkEntry = false
                             }
                         )
                     }
@@ -138,7 +149,8 @@ class MainActivity : ComponentActivity() {
                             onRequestPostNotificationsPermission = ::requestPostNotificationsPermission,
                             onImportCustomSound = ::launchCustomSoundPicker,
                             onCustomizeDashboard = { showCustomizeScreen = true },
-                            onChangeName = { forceNameEntry = true }
+                            onChangeName = { forceNameEntry = true },
+                            onChangeHomeNetwork = { forceHomeNetworkEntry = true }
                         )
                     }
                 }
