@@ -45,6 +45,7 @@ data class AuroraUiState(
     val homeSubnetPrefix: String? = null,
     val detectedWifiSubnetPrefix: String? = null,
     val calendarEvents: List<CalendarEvent> = emptyList(),
+    val calendarShowsTomorrow: Boolean = false,
     val nextAlarm: NextAlarm? = null,
     val weather: WeatherSnapshot? = null,
     val tileLayout: List<TileConfig> = emptyList(),
@@ -189,7 +190,7 @@ class AuroraViewModel(
      * None of battery, calendar, alarm, or weather have a cheap "observe changes"
      * API to replace this with, so all four are refreshed together on a simple
      * poll. Runs on Dispatchers.IO rather than the viewModelScope default
-     * (Main.immediate) because CalendarRepository.getTodayEvents() is a real,
+     * (Main.immediate) because CalendarRepository.getEvents() is a real,
      * blocking ContentResolver query - the v0.1 version of this loop only ever
      * touched cheap BatteryManager/Settings reads, so it didn't need this.
      */
@@ -206,7 +207,8 @@ class AuroraViewModel(
                         hasPostNotificationsPermission = hasPostNotificationsPermission(),
                         localIpAddress = NetworkUtil.getLocalIpAddress(),
                         detectedWifiSubnetPrefix = homeNetworkMonitor.currentWifiSubnetPrefix(),
-                        calendarEvents = calendarRepository.getTodayEvents(),
+                        calendarEvents = calendarRepository.getEvents(),
+                        calendarShowsTomorrow = calendarRepository.isShowingTomorrow(),
                         nextAlarm = alarmRepository.getNextAlarm(),
                         weather = weatherRepository.getWeather()
                     )

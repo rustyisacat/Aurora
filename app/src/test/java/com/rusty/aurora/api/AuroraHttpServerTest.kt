@@ -53,7 +53,8 @@ class AuroraHttpServerTest {
 
     private class FakeCalendarRepository(private val events: List<CalendarEvent>) : CalendarRepository {
         override fun hasCalendarPermission(): Boolean = true
-        override fun getTodayEvents(): List<CalendarEvent> = events
+        override fun getEvents(): List<CalendarEvent> = events
+        override fun isShowingTomorrow(): Boolean = false
     }
 
     private class FakeAlarmRepository(private val alarm: NextAlarm?) : AlarmRepository {
@@ -207,6 +208,7 @@ class AuroraHttpServerTest {
                 """"notificationGroups":[{"app":"Discord","count":3}],""" +
                 """"nextAlarm":{"time":"07:00","enabled":true},""" +
                 """"calendar":[{"title":"School","start":"08:00","end":"15:00","allDay":false}],""" +
+                """"calendarShowsTomorrow":false,""" +
                 """"weather":{"temperature":74,"condition":"Clear","high":86,"low":68,"timezone":"America/New_York"},""" +
                 """"soundMachine":{"playing":false,"sound":null,"volume":50,"sleepTimerMinutes":null},""" +
                 DEFAULT_LAYOUT_JSON,
@@ -222,7 +224,7 @@ class AuroraHttpServerTest {
 
         assertEquals(
             """{"battery":77,"charging":true,"notifications":0,"notificationGroups":[],""" +
-                """"nextAlarm":null,"calendar":[],"weather":null,""" +
+                """"nextAlarm":null,"calendar":[],"calendarShowsTomorrow":false,"weather":null,""" +
                 """"soundMachine":{"playing":false,"sound":null,"volume":50,"sleepTimerMinutes":null},""" +
                 DEFAULT_LAYOUT_JSON,
             body

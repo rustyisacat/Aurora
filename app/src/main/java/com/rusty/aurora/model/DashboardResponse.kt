@@ -23,7 +23,10 @@ import kotlinx.serialization.Serializable
  * customized from the phone app (LayoutRepository) - the dashboard only
  * ever reads this, it never writes it back. userName is null until the
  * first-launch name prompt has been answered (UserProfileRepository) - the
- * Morning Briefing greets without a name until then.
+ * Morning Briefing greets without a name until then. calendar holds
+ * today's events before noon and tomorrow's from noon onward (see
+ * CalendarRepository), with calendarShowsTomorrow telling the client which
+ * one it's looking at so it can label the list correctly.
  */
 @Serializable
 data class DashboardResponse(
@@ -33,6 +36,7 @@ data class DashboardResponse(
     val notificationGroups: List<NotificationGroup> = emptyList(),
     val nextAlarm: NextAlarm? = null,
     val calendar: List<CalendarEvent> = emptyList(),
+    val calendarShowsTomorrow: Boolean = false,
     val weather: WeatherSnapshot? = null,
     val soundMachine: SoundMachineState,
     val layout: List<TileConfig> = DEFAULT_TILE_LAYOUT,

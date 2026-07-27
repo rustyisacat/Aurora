@@ -13,10 +13,14 @@ class CalendarRepositoryImpl(private val context: Context) : CalendarRepository 
         ContextCompat.checkSelfPermission(context, Manifest.permission.READ_CALENDAR) ==
             PackageManager.PERMISSION_GRANTED
 
-    override fun getTodayEvents(): List<CalendarEvent> {
+    override fun isShowingTomorrow(): Boolean =
+        Calendar.getInstance().get(Calendar.HOUR_OF_DAY) >= NOON_HOUR
+
+    override fun getEvents(): List<CalendarEvent> {
         if (!hasCalendarPermission()) return emptyList()
 
-        val (startOfDay, endOfDay) = todayRangeMillis()
+        val dayOffset = if (isShowingTomorrow()) 1 else 0
+        val (startOfDay, endOfDay) = dayRangeMillis(dayOffset)
         return CalendarEventMapper.toSortedEvents(queryInstances(startOfDay, endOfDay))
     }
 
@@ -51,8 +55,9 @@ class CalendarRepositoryImpl(private val context: Context) : CalendarRepository 
         return instances
     }
 
-    private fun todayRangeMillis(): Pair<Long, Long> {
+    private fun dayRangeMillis(dayOffset: Int): Pair<Long, Long> {
         val start = Calendar.getInstance().apply {
+            add(Calendar.DAY_OF_YEAR, dayOffset)
             set(Calendar.HOUR_OF_DAY, 0)
             set(Calendar.MINUTE, 0)
             set(Calendar.SECOND, 0)
@@ -60,5 +65,9 @@ class CalendarRepositoryImpl(private val context: Context) : CalendarRepository 
         }
         val end = (start.clone() as Calendar).apply { add(Calendar.DAY_OF_YEAR, 1) }
         return start.timeInMillis to end.timeInMillis
+    }
+
+    private companion object {
+        const val NOON_HOUR = 12
     }
 }

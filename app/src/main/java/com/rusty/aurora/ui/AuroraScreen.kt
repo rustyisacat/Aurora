@@ -330,7 +330,8 @@ private fun weatherIconFor(condition: String?): ImageVector = when (condition) {
 
 @Composable
 private fun TodayEventsCard(uiState: AuroraUiState) {
-    AuroraCard(title = "Today's Events", icon = Icons.Outlined.CalendarToday) {
+    val title = if (uiState.calendarShowsTomorrow) "Tomorrow's Events" else "Today's Events"
+    AuroraCard(title = title, icon = Icons.Outlined.CalendarToday) {
         if (uiState.calendarEvents.isEmpty()) {
             Text("No events", style = MaterialTheme.typography.bodyMedium, color = AuroraTextSecondary)
         } else {
