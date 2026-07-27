@@ -8,6 +8,9 @@ import com.rusty.aurora.alarm.NextAlarm
 import com.rusty.aurora.battery.BatteryRepository
 import com.rusty.aurora.calendar.CalendarEvent
 import com.rusty.aurora.calendar.CalendarRepository
+import com.rusty.aurora.layout.LayoutRepository
+import com.rusty.aurora.layout.TileConfig
+import com.rusty.aurora.layout.TileSize
 import com.rusty.aurora.model.ServerStatus
 import com.rusty.aurora.notifications.NotificationCountRepository
 import com.rusty.aurora.service.AuroraServerController
@@ -34,7 +37,8 @@ data class AuroraUiState(
     val hasCalendarPermission: Boolean = false,
     val calendarEvents: List<CalendarEvent> = emptyList(),
     val nextAlarm: NextAlarm? = null,
-    val weather: WeatherSnapshot? = null
+    val weather: WeatherSnapshot? = null,
+    val tileLayout: List<TileConfig> = emptyList()
 ) {
     val dashboardUrl: String?
         get() = localIpAddress?.let { ip -> "http://$ip:$port/dashboard" }
@@ -47,10 +51,11 @@ class AuroraViewModel(
     private val calendarRepository: CalendarRepository,
     private val alarmRepository: AlarmRepository,
     private val weatherRepository: WeatherRepository,
+    private val layoutRepository: LayoutRepository,
     private val hasNotificationAccess: () -> Boolean
 ) : ViewModel() {
 
-    private val _uiState = MutableStateFlow(AuroraUiState())
+    private val _uiState = MutableStateFlow(AuroraUiState(tileLayout = layoutRepository.getLayout()))
     val uiState: StateFlow<AuroraUiState> = _uiState.asStateFlow()
 
     init {
@@ -81,6 +86,42 @@ class AuroraViewModel(
                 hasCalendarPermission = calendarRepository.hasCalendarPermission()
             )
         }
+    }
+
+    /**
+     * Every mutation below follows the same shape: apply the change to the
+     * in-memory list, persist it, then update the UI from the persisted
+     * result - so the UI always reflects what LayoutRepository actually
+     * accepted (e.g. a rejected "hide the last visible tile" leaves the UI
+     * showing the unchanged layout, not a phantom hidden state).
+     */
+    fun moveTileUp(id: String) = reorderTile(id, offset = -1)
+
+    fun moveTileDown(id: String) = reorderTile(id, offset = 1)
+
+    private fun reorderTile(id: String, offset: Int) {
+        val current = _uiState.value.tileLayout
+        val index = current.indexOfFirst { it.id == id }
+        val targetIndex = index + offset
+        if (index < 0 || targetIndex < 0 || targetIndex >= current.size) return
+
+        val reordered = current.toMutableList()
+        val tile = reordered.removeAt(index)
+        reordered.add(targetIndex, tile)
+        persistLayout(reordered)
+    }
+
+    fun setTileVisible(id: String, visible: Boolean) {
+        persistLayout(_uiState.value.tileLayout.map { if (it.id == id) it.copy(visible = visible) else it })
+    }
+
+    fun setTileSize(id: String, size: TileSize) {
+        persistLayout(_uiState.value.tileLayout.map { if (it.id == id) it.copy(size = size) else it })
+    }
+
+    private fun persistLayout(tiles: List<TileConfig>) {
+        layoutRepository.setLayout(tiles)
+        _uiState.update { it.copy(tileLayout = layoutRepository.getLayout()) }
     }
 
     private fun observeServerStatus() {
@@ -133,6 +174,7 @@ class AuroraViewModel(
         private val calendarRepository: CalendarRepository,
         private val alarmRepository: AlarmRepository,
         private val weatherRepository: WeatherRepository,
+        private val layoutRepository: LayoutRepository,
         private val hasNotificationAccess: () -> Boolean
     ) : ViewModelProvider.Factory {
         override fun <T : ViewModel> create(modelClass: Class<T>): T {
@@ -144,6 +186,7 @@ class AuroraViewModel(
                 calendarRepository,
                 alarmRepository,
                 weatherRepository,
+                layoutRepository,
                 hasNotificationAccess
             ) as T
         }

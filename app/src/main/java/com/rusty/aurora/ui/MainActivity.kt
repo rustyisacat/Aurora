@@ -13,6 +13,9 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.core.content.getSystemService
 import com.rusty.aurora.AuroraApplication
 import com.rusty.aurora.ui.theme.AuroraTheme
@@ -41,6 +44,7 @@ class MainActivity : ComponentActivity() {
             calendarRepository = container.calendarRepository,
             alarmRepository = container.alarmRepository,
             weatherRepository = container.weatherRepository,
+            layoutRepository = container.layoutRepository,
             hasNotificationAccess = { NotificationAccessUtil.isNotificationAccessGranted(this) }
         )
     }
@@ -62,16 +66,33 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         setContent {
             val uiState by viewModel.uiState.collectAsState()
+            // Two screens, no back stack to speak of - a plain boolean is
+            // simpler and more reliable here than pulling in Navigation-Compose
+            // for what's really just "show the other screen, then come back."
+            var showCustomizeScreen by remember { mutableStateOf(false) }
+
             AuroraTheme(weatherCondition = uiState.weather?.condition) {
-                AuroraScreen(
-                    uiState = uiState,
-                    onStartServer = viewModel::startServer,
-                    onStopServer = viewModel::stopServer,
-                    onCopyDashboardUrl = ::copyDashboardUrlToClipboard,
-                    onRequestNotificationAccess = ::openNotificationAccessSettings,
-                    onRequestCalendarAccess = ::requestCalendarPermission,
-                    onImportCustomSound = ::launchCustomSoundPicker
-                )
+                if (showCustomizeScreen) {
+                    CustomizeLayoutScreen(
+                        tiles = uiState.tileLayout,
+                        onBack = { showCustomizeScreen = false },
+                        onMoveUp = viewModel::moveTileUp,
+                        onMoveDown = viewModel::moveTileDown,
+                        onVisibleChange = viewModel::setTileVisible,
+                        onSizeChange = viewModel::setTileSize
+                    )
+                } else {
+                    AuroraScreen(
+                        uiState = uiState,
+                        onStartServer = viewModel::startServer,
+                        onStopServer = viewModel::stopServer,
+                        onCopyDashboardUrl = ::copyDashboardUrlToClipboard,
+                        onRequestNotificationAccess = ::openNotificationAccessSettings,
+                        onRequestCalendarAccess = ::requestCalendarPermission,
+                        onImportCustomSound = ::launchCustomSoundPicker,
+                        onCustomizeDashboard = { showCustomizeScreen = true }
+                    )
+                }
             }
         }
     }

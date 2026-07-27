@@ -17,6 +17,8 @@ import com.rusty.aurora.battery.BatteryRepository
 import com.rusty.aurora.battery.BatteryRepositoryImpl
 import com.rusty.aurora.calendar.CalendarRepository
 import com.rusty.aurora.calendar.CalendarRepositoryImpl
+import com.rusty.aurora.layout.LayoutRepository
+import com.rusty.aurora.layout.LayoutRepositoryImpl
 import com.rusty.aurora.notifications.NotificationCountRepository
 import com.rusty.aurora.notifications.NotificationCountRepositoryImpl
 import com.rusty.aurora.service.AuroraServerController
@@ -53,6 +55,8 @@ class AppContainer(context: Context) {
     val soundRepository: SoundRepository =
         SoundRepositoryImpl(context, SoundLibrary(context), alarmRepository)
 
+    val layoutRepository: LayoutRepository = LayoutRepositoryImpl(context)
+
     private val routes = listOf(
         HealthRoute(),
         DashboardRoute(
@@ -61,7 +65,8 @@ class AppContainer(context: Context) {
             calendarRepository = calendarRepository,
             alarmRepository = alarmRepository,
             weatherRepository = weatherRepository,
-            soundRepository = soundRepository
+            soundRepository = soundRepository,
+            layoutRepository = layoutRepository
         ),
         PlaySoundRoute(soundRepository),
         PauseSoundRoute(soundRepository),

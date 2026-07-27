@@ -6,6 +6,9 @@ import com.rusty.aurora.alarm.NextAlarm
 import com.rusty.aurora.battery.BatteryRepository
 import com.rusty.aurora.calendar.CalendarEvent
 import com.rusty.aurora.calendar.CalendarRepository
+import com.rusty.aurora.layout.DEFAULT_TILE_LAYOUT
+import com.rusty.aurora.layout.LayoutRepository
+import com.rusty.aurora.layout.TileConfig
 import com.rusty.aurora.notifications.NotificationCountRepositoryImpl
 import com.rusty.aurora.notifications.NotificationGroup
 import com.rusty.aurora.sound.SoundInfo
@@ -31,6 +34,14 @@ import java.net.URL
  */
 class AuroraHttpServerTest {
 
+    private val DEFAULT_LAYOUT_JSON =
+        """"layout":[{"id":"weather","visible":true,"size":"medium"},""" +
+            """{"id":"phone","visible":true,"size":"medium"},""" +
+            """{"id":"notifications","visible":true,"size":"large"},""" +
+            """{"id":"schedule","visible":true,"size":"medium"},""" +
+            """{"id":"alarm","visible":true,"size":"small"},""" +
+            """{"id":"sound","visible":true,"size":"large"}]}"""
+
     private class FakeBatteryRepository(
         private val level: Int,
         private val charging: Boolean
@@ -51,6 +62,14 @@ class AuroraHttpServerTest {
 
     private class FakeWeatherRepository(private val weather: WeatherSnapshot?) : WeatherRepository {
         override fun getWeather(): WeatherSnapshot? = weather
+    }
+
+    private class FakeLayoutRepository(private var tiles: List<TileConfig> = DEFAULT_TILE_LAYOUT) : LayoutRepository {
+        override fun getLayout(): List<TileConfig> = tiles
+        override fun setLayout(tiles: List<TileConfig>) {
+            if (tiles.none { it.visible }) return
+            this.tiles = tiles
+        }
     }
 
     private class FakeSoundRepository(
@@ -132,7 +151,8 @@ class AuroraHttpServerTest {
                 calendarRepository = FakeCalendarRepository(calendarEvents),
                 alarmRepository = FakeAlarmRepository(nextAlarm),
                 weatherRepository = FakeWeatherRepository(weather),
-                soundRepository = fakeSoundRepository
+                soundRepository = fakeSoundRepository,
+                layoutRepository = FakeLayoutRepository()
             ),
             PlaySoundRoute(fakeSoundRepository),
             PauseSoundRoute(fakeSoundRepository),
@@ -179,7 +199,8 @@ class AuroraHttpServerTest {
                 """"nextAlarm":{"time":"07:00","enabled":true},""" +
                 """"calendar":[{"title":"School","start":"08:00","end":"15:00","allDay":false}],""" +
                 """"weather":{"temperature":74,"condition":"Clear","high":86,"low":68},""" +
-                """"soundMachine":{"playing":false,"sound":null,"volume":50,"sleepTimerMinutes":null}}""",
+                """"soundMachine":{"playing":false,"sound":null,"volume":50,"sleepTimerMinutes":null},""" +
+                DEFAULT_LAYOUT_JSON,
             body
         )
     }
@@ -193,7 +214,8 @@ class AuroraHttpServerTest {
         assertEquals(
             """{"battery":77,"charging":true,"notifications":0,"notificationGroups":[],""" +
                 """"nextAlarm":null,"calendar":[],"weather":null,""" +
-                """"soundMachine":{"playing":false,"sound":null,"volume":50,"sleepTimerMinutes":null}}""",
+                """"soundMachine":{"playing":false,"sound":null,"volume":50,"sleepTimerMinutes":null},""" +
+                DEFAULT_LAYOUT_JSON,
             body
         )
     }

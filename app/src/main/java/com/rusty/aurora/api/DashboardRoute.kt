@@ -3,6 +3,7 @@ package com.rusty.aurora.api
 import com.rusty.aurora.alarm.AlarmRepository
 import com.rusty.aurora.battery.BatteryRepository
 import com.rusty.aurora.calendar.CalendarRepository
+import com.rusty.aurora.layout.LayoutRepository
 import com.rusty.aurora.model.DashboardResponse
 import com.rusty.aurora.notifications.NotificationCountRepository
 import com.rusty.aurora.sound.SoundRepository
@@ -18,7 +19,8 @@ class DashboardRoute(
     private val calendarRepository: CalendarRepository,
     private val alarmRepository: AlarmRepository,
     private val weatherRepository: WeatherRepository,
-    private val soundRepository: SoundRepository
+    private val soundRepository: SoundRepository,
+    private val layoutRepository: LayoutRepository
 ) : Route {
 
     // encodeDefaults=true keeps nextAlarm/weather present as explicit JSON
@@ -38,7 +40,8 @@ class DashboardRoute(
             nextAlarm = alarmRepository.getNextAlarm(),
             calendar = calendarRepository.getTodayEvents(),
             weather = weatherRepository.getWeather(),
-            soundMachine = soundRepository.getState()
+            soundMachine = soundRepository.getState(),
+            layout = layoutRepository.getLayout()
         )
         return NanoHTTPD.newFixedLengthResponse(
             Status.OK,

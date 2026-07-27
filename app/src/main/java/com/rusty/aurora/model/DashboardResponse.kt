@@ -2,6 +2,8 @@ package com.rusty.aurora.model
 
 import com.rusty.aurora.alarm.NextAlarm
 import com.rusty.aurora.calendar.CalendarEvent
+import com.rusty.aurora.layout.DEFAULT_TILE_LAYOUT
+import com.rusty.aurora.layout.TileConfig
 import com.rusty.aurora.notifications.NotificationGroup
 import com.rusty.aurora.sound.SoundMachineState
 import com.rusty.aurora.weather.WeatherSnapshot
@@ -17,7 +19,9 @@ import kotlinx.serialization.Serializable
  * no data is available yet, and calendar/notificationGroups are always a
  * list, empty when there's nothing to show. soundMachine is never null -
  * "not playing, nothing loaded" is a well-defined state, not an absence of
- * data.
+ * data. layout is the Morning Overview page's card order/visibility/size,
+ * customized from the phone app (LayoutRepository) - the dashboard only
+ * ever reads this, it never writes it back.
  */
 @Serializable
 data class DashboardResponse(
@@ -28,5 +32,6 @@ data class DashboardResponse(
     val nextAlarm: NextAlarm? = null,
     val calendar: List<CalendarEvent> = emptyList(),
     val weather: WeatherSnapshot? = null,
-    val soundMachine: SoundMachineState
+    val soundMachine: SoundMachineState,
+    val layout: List<TileConfig> = DEFAULT_TILE_LAYOUT
 )

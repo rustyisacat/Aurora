@@ -26,6 +26,7 @@ import androidx.compose.material.icons.outlined.Bolt
 import androidx.compose.material.icons.outlined.CalendarToday
 import androidx.compose.material.icons.outlined.Cloud
 import androidx.compose.material.icons.outlined.ContentCopy
+import androidx.compose.material.icons.outlined.Dashboard
 import androidx.compose.material.icons.outlined.Dns
 import androidx.compose.material.icons.outlined.Grain
 import androidx.compose.material.icons.outlined.LibraryMusic
@@ -68,6 +69,7 @@ fun AuroraScreen(
     onRequestNotificationAccess: () -> Unit,
     onRequestCalendarAccess: () -> Unit,
     onImportCustomSound: () -> Unit,
+    onCustomizeDashboard: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     Surface(modifier = modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
@@ -148,6 +150,16 @@ fun AuroraScreen(
                 Icon(Icons.Outlined.LibraryMusic, contentDescription = null, modifier = Modifier.size(18.dp))
                 Spacer(Modifier.width(8.dp))
                 Text("Import Custom Sound")
+            }
+
+            Button(
+                onClick = onCustomizeDashboard,
+                shape = RoundedCornerShape(14.dp),
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Icon(Icons.Outlined.Dashboard, contentDescription = null, modifier = Modifier.size(18.dp))
+                Spacer(Modifier.width(8.dp))
+                Text("Customize Dashboard")
             }
 
             Spacer(Modifier.height(4.dp))
