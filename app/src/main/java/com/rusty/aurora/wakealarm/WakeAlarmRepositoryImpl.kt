@@ -41,7 +41,7 @@ class WakeAlarmRepositoryImpl(
 
     override fun handleFired(alarmId: String) {
         val alarm = alarms.find { it.id == alarmId } ?: return
-        val soundId = alarm.soundId ?: defaultAlarmSoundId ?: soundLibrary.getAll().firstOrNull()?.id
+        val soundId = alarm.soundId ?: defaultAlarmSoundId ?: resolveBundledAlarmSoundId()
         ringingState = WakeAlarmRingingState(
             ringing = true, alarmId = alarm.id, label = alarm.label, soundId = soundId
         )
@@ -103,10 +103,20 @@ class WakeAlarmRepositoryImpl(
         prefs.edit().putString(KEY_RINGING, json.encodeToString(ringingState)).apply()
     }
 
+    /** Falls back to the sound library's own first entry only if the
+     *  bundled alarm asset is somehow missing (e.g. a fork that dropped
+     *  it) - it should always be present in a normal build. */
+    private fun resolveBundledAlarmSoundId(): String? =
+        soundLibrary.findById(BUNDLED_ALARM_SOUND_ID)?.id ?: soundLibrary.getAll().firstOrNull()?.id
+
     private companion object {
         const val PREFS_NAME = "aurora_wake_alarms"
         const val KEY_ALARMS = "alarms"
         const val KEY_RINGING = "ringing_state"
         const val KEY_DEFAULT_ALARM_SOUND = "default_alarm_sound_id"
+
+        // A real "wake someone up" clip, deliberately not the ambient
+        // sound machine's own default (rain) - see SoundLibrary.BUILT_IN.
+        const val BUNDLED_ALARM_SOUND_ID = "alarm_reveille"
     }
 }

@@ -85,7 +85,13 @@ class SoundLibrary(private val context: Context) {
             SoundInfo("wind", "Wind", SoundSource.Asset("sounds/wind.mp3")),
             SoundInfo("ocean_waves", "Ocean Waves", SoundSource.Asset("sounds/ocean_waves.mp3")),
             SoundInfo("rain_on_tent", "Rain on Tent", SoundSource.Asset("sounds/rain_on_tent.mp3")),
-            SoundInfo("fireplace", "Fireplace", SoundSource.Asset("sounds/fireplace.mp3"))
+            SoundInfo("fireplace", "Fireplace", SoundSource.Asset("sounds/fireplace.mp3")),
+            // Kept last, not first: SoundRepository.play(null) and this
+            // list's other "first entry" fallback uses are for the
+            // *ambient* sound machine, where a loud alarm clip defaulting
+            // in would be exactly wrong. Wake alarms reference this one by
+            // id specifically - see WakeAlarmRepositoryImpl.BUNDLED_ALARM_SOUND_ID.
+            SoundInfo("alarm_reveille", "Reveille (Alarm)", SoundSource.Asset("sounds/alarm_reveille.mp3"))
         )
     }
 }

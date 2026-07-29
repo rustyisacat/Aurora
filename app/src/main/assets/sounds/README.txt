@@ -30,6 +30,14 @@ Current catalog entry mapping (see SoundLibrary.kt):
   wind.mp3           - Wind             (placeholder)
   ocean_waves.mp3    - Ocean Waves      (placeholder)
   fireplace.mp3      - Fireplace        (placeholder)
+  alarm_reveille.mp3 - Reveille (Alarm) (real, ~18s loop)
+
+alarm_reveille.mp3 is a short "Reveille" bugle-call clip, real (not a
+synthetic placeholder). It's WakeAlarmRepositoryImpl's bundled
+last-resort fallback sound - see BUNDLED_ALARM_SOUND_ID there - used
+when a wake alarm has neither its own soundId nor a configured default
+alarm sound. Kept separate from the ambient placeholders above since
+it's meant to actually wake someone up, not to be soothing.
 
 For real bundled sounds, keep them reasonably compressed (~128kbps MP3 or
 OGG Vorbis) rather than lossless - the Echo Show 5's hardware is modest and
