@@ -99,6 +99,11 @@ class MainActivity : ComponentActivity() {
             if (uris.isNotEmpty()) importPhotos(uris)
         }
 
+    private val wallpaperPickerLauncher =
+        registerForActivityResult(ActivityResultContracts.PickVisualMedia()) { uri ->
+            if (uri != null) importWallpaper(uri)
+        }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         AuroraBackgroundService.start(this)
@@ -155,6 +160,7 @@ class MainActivity : ComponentActivity() {
                             onRequestPostNotificationsPermission = ::requestPostNotificationsPermission,
                             onImportCustomSound = ::launchCustomSoundPicker,
                             onChoosePhotos = ::launchPhotoPicker,
+                            onChooseWallpaper = ::launchWallpaperPicker,
                             onCustomizeDashboard = { showCustomizeScreen = true },
                             onChangeName = { forceNameEntry = true },
                             onChangeHomeNetwork = { forceHomeNetworkEntry = true }
@@ -226,6 +232,17 @@ class MainActivity : ComponentActivity() {
             contentResolver.takePersistableUriPermission(uri, Intent.FLAG_GRANT_READ_URI_PERMISSION)
         }
         (application as AuroraApplication).container.photoRepository.setPhotos(uris)
+    }
+
+    private fun launchWallpaperPicker() {
+        wallpaperPickerLauncher.launch(
+            PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)
+        )
+    }
+
+    private fun importWallpaper(uri: Uri) {
+        contentResolver.takePersistableUriPermission(uri, Intent.FLAG_GRANT_READ_URI_PERMISSION)
+        (application as AuroraApplication).container.wallpaperRepository.setWallpaper(uri)
     }
 
     private companion object {

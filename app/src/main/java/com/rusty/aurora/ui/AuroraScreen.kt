@@ -33,6 +33,7 @@ import androidx.compose.material.icons.outlined.Grain
 import androidx.compose.material.icons.outlined.LibraryMusic
 import androidx.compose.material.icons.outlined.Notifications
 import androidx.compose.material.icons.outlined.PhotoLibrary
+import androidx.compose.material.icons.outlined.Wallpaper
 import androidx.compose.material.icons.outlined.WbSunny
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -72,6 +73,7 @@ fun AuroraScreen(
     onRequestPostNotificationsPermission: () -> Unit,
     onImportCustomSound: () -> Unit,
     onChoosePhotos: () -> Unit,
+    onChooseWallpaper: () -> Unit,
     onCustomizeDashboard: () -> Unit,
     onChangeName: () -> Unit,
     onChangeHomeNetwork: () -> Unit,
@@ -166,6 +168,20 @@ fun AuroraScreen(
                 Icon(Icons.Outlined.PhotoLibrary, contentDescription = null, modifier = Modifier.size(18.dp))
                 Spacer(Modifier.width(8.dp))
                 Text("Choose Ambient Photos")
+            }
+
+            // The main dashboard's wallpaper - a single image, separate from
+            // Ambient Mode's rotation above. The Echo Show also extracts an
+            // accent color from whatever's picked here, so the whole
+            // dashboard's theme follows it once set.
+            OutlinedButton(
+                onClick = onChooseWallpaper,
+                shape = RoundedCornerShape(14.dp),
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Icon(Icons.Outlined.Wallpaper, contentDescription = null, modifier = Modifier.size(18.dp))
+                Spacer(Modifier.width(8.dp))
+                Text("Choose Wallpaper")
             }
 
             Button(

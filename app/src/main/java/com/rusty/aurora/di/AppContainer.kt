@@ -22,6 +22,7 @@ import com.rusty.aurora.api.SnoozeWakeAlarmRoute
 import com.rusty.aurora.api.SoundLibraryRoute
 import com.rusty.aurora.api.SoundStreamRoute
 import com.rusty.aurora.api.StopSoundRoute
+import com.rusty.aurora.api.WallpaperImageRoute
 import com.rusty.aurora.battery.BatteryRepository
 import com.rusty.aurora.battery.BatteryRepositoryImpl
 import com.rusty.aurora.calendar.CalendarRepository
@@ -38,6 +39,8 @@ import com.rusty.aurora.notifications.NotificationCountRepository
 import com.rusty.aurora.notifications.NotificationCountRepositoryImpl
 import com.rusty.aurora.photo.PhotoRepository
 import com.rusty.aurora.photo.PhotoRepositoryImpl
+import com.rusty.aurora.photo.WallpaperRepository
+import com.rusty.aurora.photo.WallpaperRepositoryImpl
 import com.rusty.aurora.profile.UserProfileRepository
 import com.rusty.aurora.profile.UserProfileRepositoryImpl
 import com.rusty.aurora.service.AuroraServerController
@@ -98,6 +101,11 @@ class AppContainer(context: Context) {
     // were picked and serves their bytes (PhotoStreamRoute).
     val photoRepository: PhotoRepository = PhotoRepositoryImpl(context)
 
+    // The main dashboard's wallpaper - a single image, separate from
+    // Ambient Mode's rotating photo set. The Echo Show extracts its own
+    // accent color from this client-side; Aurora just serves the bytes.
+    val wallpaperRepository: WallpaperRepository = WallpaperRepositoryImpl(context)
+
     val homeNetworkRepository: HomeNetworkRepository = HomeNetworkRepositoryImpl(context)
 
     val homeNetworkMonitor: HomeNetworkMonitor = HomeNetworkMonitorImpl(context, homeNetworkRepository)
@@ -130,7 +138,8 @@ class AppContainer(context: Context) {
         SetDefaultAlarmSoundRoute(wakeAlarmRepository),
         ClearNotificationsRoute(notificationCountRepository),
         PhotoLibraryRoute(photoRepository),
-        PhotoStreamRoute(photoRepository)
+        PhotoStreamRoute(photoRepository),
+        WallpaperImageRoute(wallpaperRepository)
     )
 
     val serverController = AuroraServerController { port -> AuroraHttpServer(port, routes) }
