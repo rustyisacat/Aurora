@@ -3,7 +3,7 @@
 ![Platform](https://img.shields.io/badge/platform-Android-3DDC84?logo=android&logoColor=white)
 ![Kotlin](https://img.shields.io/badge/Kotlin-2.2-7F52FF?logo=kotlin&logoColor=white)
 ![Jetpack Compose](https://img.shields.io/badge/UI-Jetpack%20Compose-4285F4?logo=jetpackcompose&logoColor=white)
-![Version](https://img.shields.io/badge/version-2.0-blue)
+![Version](https://img.shields.io/badge/version-3.0-blue)
 ![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)
 
 Aurora turns an Android phone into the backend for a self-hosted bedside
@@ -21,6 +21,26 @@ just your phone talking HTTP to a screen on the same network.
   <img src="docs/screenshot-main.png" width="45%" alt="Aurora app main screen" />
   <img src="docs/screenshot-customize.png" width="45%" alt="Customize Dashboard screen" />
 </p>
+
+## What's new in v3.0
+
+Aurora's own surface is smaller this release — most of v3.0's work went
+into the dashboard side (see
+[echo-dashboard](https://github.com/rustyisacat/echo-dashboard)'s README:
+polish animations, animated weather backgrounds, 8 selectable Dashboard
+Themes, a one-tap Bedside Mode, an idle-triggered Ambient Mode, and
+wallpaper-matched color theming). What Aurora itself gained is the photo
+backend those last two features needed:
+
+- **Choose Ambient Photos**: pick a handful of photos from your gallery via
+  Android's Photo Picker — no storage permission needed, since the picker
+  itself only grants access to what you actually select. Persisted across
+  restarts and served to the dashboard for Ambient Mode's slow-crossfade
+  photo rotation.
+- **Choose Wallpaper**: the same Photo Picker approach for a single image,
+  shown behind the main dashboard. The dashboard extracts its own accent
+  color from whatever you pick client-side — Aurora just serves the bytes,
+  same "dumb backend" role it already plays for the sound machine.
 
 ## What's new in v2.0
 
@@ -68,6 +88,10 @@ just your phone talking HTTP to a screen on the same network.
   the phone is on the configured home Wi-Fi network.
 - **Dashboard customization**: reorder, hide, or resize the dashboard's
   cards, right from the phone app — no code changes needed.
+- **Ambient Mode photos & dashboard wallpaper**: pick photos via Android's
+  Photo Picker (no storage permission needed) for the dashboard's idle
+  screensaver and its main-screen wallpaper — served over HTTP the same
+  way custom sounds are, Aurora never renders anything itself.
 - **Zero cloud dependency**: everything is plain HTTP on your LAN.
 
 ## How it fits together
@@ -197,10 +221,11 @@ app or Aurora's own Wake Alarms fires soonest; `wakeAlarms`/
 
 Sound Machine control routes (`POST /sound/play`, `/sound/pause`,
 `/sound/stop`, `/sound/volume`, `/sound/timer`, `GET /sound/library`,
-`GET /sound/stream`) and Wake Alarm control routes (`GET /wakealarms`,
+`GET /sound/stream`), Wake Alarm control routes (`GET /wakealarms`,
 `POST /wakealarms/set`, `/wakealarms/delete`, `/wakealarms/dismiss`,
-`/wakealarms/snooze`) exist for the dashboard's own use — see
-[echo-dashboard](https://github.com/rustyisacat/echo-dashboard).
+`/wakealarms/snooze`), and the photo routes (`GET /photos/library`,
+`GET /photos/stream`, `GET /wallpaper/image`) exist for the dashboard's own
+use — see [echo-dashboard](https://github.com/rustyisacat/echo-dashboard).
 
 ## Architecture
 
@@ -214,6 +239,7 @@ com.rusty.aurora
 ├── location/       LocationRepository - best-effort last-known location for weather
 ├── network/        HomeNetworkMonitor/Repository - user-configured home Wi-Fi subnet detection
 ├── notifications/  NotificationCountRepository + the NotificationListenerService
+├── photo/          Ambient Mode's photo rotation + the dashboard wallpaper, both Photo Picker-backed
 ├── profile/        UserProfileRepository - the first-launch name prompt
 ├── service/        AuroraBackgroundService (persistent server) + AuroraServerController
 ├── sound/          Sound Machine state, library, sleep timer (Aurora never plays audio itself)
