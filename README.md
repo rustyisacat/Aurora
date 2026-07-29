@@ -99,11 +99,14 @@ backend those last two features needed:
   the phone is on the configured home Wi-Fi network.
 - **Dashboard customization**: reorder, hide, or resize the dashboard's
   cards, right from the phone app — no code changes needed.
-- **Ambient Mode photos & rotating dashboard wallpaper**: pick photos via
-  Android's Photo Picker (no storage permission needed); the dashboard
-  cycles the same library for both its idle screensaver and its
-  main-screen wallpaper — served over HTTP the same way custom sounds are,
-  Aurora never renders anything itself.
+- **Ambient Mode photos & configurable dashboard wallpaper**: pick photos
+  via Android's Photo Picker (no storage permission needed) — Ambient
+  Mode's idle screensaver always cycles the whole library, while the
+  main-screen wallpaper can independently rotate through it too, lock to
+  one fixed photo, or follow a time-of-day schedule (different photos at
+  different times, picked with real thumbnails and a time picker right in
+  the phone app). Served over HTTP the same way custom sounds are, Aurora
+  never renders anything itself.
 - **Rain forecast & Do Not Disturb**: weather includes a next-rain-hour
   nudge for the dashboard's "bring an umbrella" warning, and the dashboard
   can flip the phone's real system DND on and off.
@@ -229,7 +232,10 @@ a permanent location than grant location access.
   "wakeAlarmRinging": { "ringing": false, "alarmId": null, "label": "", "soundId": null },
   "layout": [{ "id": "weather", "visible": true, "size": "medium" }],
   "dndEnabled": false,
-  "chargingEtaMinutes": null
+  "chargingEtaMinutes": null,
+  "wallpaperMode": "rotating",
+  "wallpaperSinglePhotoId": null,
+  "wallpaperSchedule": []
 }
 ```
 
@@ -237,7 +243,12 @@ Absent values are always an explicit JSON `null` (or `[]`/`{}`), never an
 omitted key — the response shape never changes based on what data happens
 to be available. `nextAlarm` reflects whichever of the phone's stock Clock
 app or Aurora's own Wake Alarms fires soonest; `wakeAlarms`/
-`wakeAlarmRinging` are Aurora's own alarms specifically.
+`wakeAlarmRinging` are Aurora's own alarms specifically. `wallpaperMode` is
+`"rotating"`, `"single"`, or `"scheduled"` — the dashboard reads
+`wallpaperSinglePhotoId`/`wallpaperSchedule` only in the modes where they
+apply and computes which photo is actually "current" itself, against its
+own clock (see echo-dashboard's `applyWallpaperMode()`), the same way it
+already does for auto-dim.
 
 Sound Machine control routes (`POST /sound/play`, `/sound/pause`,
 `/sound/stop`, `/sound/volume`, `/sound/timer`, `GET /sound/library`,
@@ -247,8 +258,9 @@ Sound Machine control routes (`POST /sound/play`, `/sound/pause`,
 `GET /photos/stream`), `POST /dnd/set`, and `GET /notifications/icon?package=`
 (an app's launcher icon as a PNG) exist for the dashboard's own use — see
 [echo-dashboard](https://github.com/rustyisacat/echo-dashboard). Which
-apps' notifications are excluded is phone-app-only configuration (the
-Notification Apps card), not something the dashboard can change.
+apps' notifications are excluded, and the wallpaper mode/single photo/
+schedule, are all phone-app-only configuration - the dashboard only ever
+reads them, never writes them back.
 
 ## Architecture
 
@@ -263,7 +275,7 @@ com.rusty.aurora
 ├── network/        HomeNetworkMonitor/Repository - user-configured home Wi-Fi subnet detection
 ├── notifications/  NotificationCountRepository + the NotificationListenerService + DndRepository
 │                   + NotificationBlocklistRepository + AppIconProvider
-├── photo/          Photo Picker-backed library, shared by Ambient Mode and the dashboard's rotating wallpaper
+├── photo/          Photo Picker-backed library (shared by Ambient Mode + dashboard wallpaper) + WallpaperConfigRepository
 ├── profile/        UserProfileRepository - the first-launch name prompt
 ├── service/        AuroraBackgroundService (persistent server) + AuroraServerController
 ├── sound/          Sound Machine state, library, sleep timer (Aurora never plays audio itself)

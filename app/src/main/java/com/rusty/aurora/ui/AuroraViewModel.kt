@@ -17,6 +17,11 @@ import com.rusty.aurora.network.HomeNetworkMonitor
 import com.rusty.aurora.network.HomeNetworkRepository
 import com.rusty.aurora.notifications.NotificationBlocklistRepository
 import com.rusty.aurora.notifications.NotificationCountRepository
+import com.rusty.aurora.photo.PhotoInfo
+import com.rusty.aurora.photo.PhotoRepository
+import com.rusty.aurora.photo.WallpaperConfigRepository
+import com.rusty.aurora.photo.WallpaperMode
+import com.rusty.aurora.photo.WallpaperScheduleEntry
 import com.rusty.aurora.profile.UserProfileRepository
 import com.rusty.aurora.service.AuroraServerController
 import com.rusty.aurora.util.NetworkUtil
@@ -57,7 +62,11 @@ data class AuroraUiState(
     val weather: WeatherSnapshot? = null,
     val tileLayout: List<TileConfig> = emptyList(),
     val userName: String? = null,
-    val knownNotificationApps: List<KnownAppUiState> = emptyList()
+    val knownNotificationApps: List<KnownAppUiState> = emptyList(),
+    val wallpaperPhotos: List<PhotoInfo> = emptyList(),
+    val wallpaperMode: WallpaperMode = WallpaperMode.ROTATING,
+    val wallpaperSinglePhotoId: String? = null,
+    val wallpaperSchedule: List<WallpaperScheduleEntry> = emptyList()
 ) {
     val dashboardUrl: String?
         get() = localIpAddress?.let { ip -> "http://$ip:$port/dashboard" }
@@ -76,6 +85,8 @@ class AuroraViewModel(
     private val userProfileRepository: UserProfileRepository,
     private val homeNetworkMonitor: HomeNetworkMonitor,
     private val homeNetworkRepository: HomeNetworkRepository,
+    private val photoRepository: PhotoRepository,
+    private val wallpaperConfigRepository: WallpaperConfigRepository,
     private val hasNotificationAccess: () -> Boolean,
     private val hasPostNotificationsPermission: () -> Boolean,
     private val hasDndAccess: () -> Boolean
@@ -85,7 +96,11 @@ class AuroraViewModel(
         AuroraUiState(
             tileLayout = layoutRepository.getLayout(),
             userName = userProfileRepository.getUserName(),
-            homeSubnetPrefix = homeNetworkRepository.getHomeSubnetPrefix()
+            homeSubnetPrefix = homeNetworkRepository.getHomeSubnetPrefix(),
+            wallpaperPhotos = photoRepository.getPhotos(),
+            wallpaperMode = wallpaperConfigRepository.getMode(),
+            wallpaperSinglePhotoId = wallpaperConfigRepository.getSinglePhotoId(),
+            wallpaperSchedule = wallpaperConfigRepository.getSchedule()
         )
     )
     val uiState: StateFlow<AuroraUiState> = _uiState.asStateFlow()
@@ -203,6 +218,33 @@ class AuroraViewModel(
         }
     }
 
+    fun setWallpaperMode(mode: WallpaperMode) {
+        wallpaperConfigRepository.setMode(mode)
+        _uiState.update { it.copy(wallpaperMode = mode) }
+    }
+
+    fun setWallpaperSinglePhoto(photoId: String) {
+        wallpaperConfigRepository.setSinglePhotoId(photoId)
+        _uiState.update { it.copy(wallpaperSinglePhotoId = photoId) }
+    }
+
+    /** Replaces any existing entry at the same [time] rather than adding a
+     *  second one - two photos scheduled for the same moment is never a
+     *  sensible state, so "add" and "edit" are the same operation here. */
+    fun setWallpaperScheduleEntry(time: String, photoId: String) {
+        val updated = wallpaperConfigRepository.getSchedule().filterNot { it.time == time } +
+            WallpaperScheduleEntry(photoId, time)
+        val sorted = updated.sortedBy { it.time }
+        wallpaperConfigRepository.setSchedule(sorted)
+        _uiState.update { it.copy(wallpaperSchedule = sorted) }
+    }
+
+    fun removeWallpaperScheduleEntry(time: String) {
+        val updated = wallpaperConfigRepository.getSchedule().filterNot { it.time == time }
+        wallpaperConfigRepository.setSchedule(updated)
+        _uiState.update { it.copy(wallpaperSchedule = updated) }
+    }
+
     /** Toggling this doesn't just persist the preference - it also asks the
      *  listener service to recompute right away (see
      *  NotificationCountRepository.refresh), so the change shows up on the
@@ -248,7 +290,14 @@ class AuroraViewModel(
                         calendarEvents = calendarRepository.getEvents(),
                         calendarShowsTomorrow = calendarRepository.isShowingTomorrow(),
                         nextAlarm = alarmRepository.getNextAlarm(),
-                        weather = weatherRepository.getWeather()
+                        weather = weatherRepository.getWeather(),
+                        // Read fresh each poll rather than only right after
+                        // setWallpaperMode/etc - MainActivity writes new
+                        // photo selections straight to photoRepository
+                        // without going through this ViewModel (same as the
+                        // sound/ambient photo pickers), so this is what
+                        // picks that up.
+                        wallpaperPhotos = photoRepository.getPhotos()
                     )
                 }
                 delay(POLL_INTERVAL_MS)
@@ -269,6 +318,8 @@ class AuroraViewModel(
         private val userProfileRepository: UserProfileRepository,
         private val homeNetworkMonitor: HomeNetworkMonitor,
         private val homeNetworkRepository: HomeNetworkRepository,
+        private val photoRepository: PhotoRepository,
+        private val wallpaperConfigRepository: WallpaperConfigRepository,
         private val hasNotificationAccess: () -> Boolean,
         private val hasPostNotificationsPermission: () -> Boolean,
         private val hasDndAccess: () -> Boolean
@@ -288,6 +339,8 @@ class AuroraViewModel(
                 userProfileRepository,
                 homeNetworkMonitor,
                 homeNetworkRepository,
+                photoRepository,
+                wallpaperConfigRepository,
                 hasNotificationAccess,
                 hasPostNotificationsPermission,
                 hasDndAccess

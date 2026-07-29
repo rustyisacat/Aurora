@@ -63,6 +63,8 @@ class MainActivity : ComponentActivity() {
             userProfileRepository = container.userProfileRepository,
             homeNetworkMonitor = container.homeNetworkMonitor,
             homeNetworkRepository = container.homeNetworkRepository,
+            photoRepository = container.photoRepository,
+            wallpaperConfigRepository = container.wallpaperConfigRepository,
             hasNotificationAccess = { NotificationAccessUtil.isNotificationAccessGranted(this) },
             hasPostNotificationsPermission = { NotificationManagerCompat.from(this).areNotificationsEnabled() },
             hasDndAccess = { DndAccessUtil.isDndAccessGranted(this) }
@@ -160,6 +162,10 @@ class MainActivity : ComponentActivity() {
                             onChoosePhotos = ::launchPhotoPicker,
                             onRequestDndAccess = ::openDndAccessSettings,
                             onToggleAppBlocked = viewModel::toggleAppBlocked,
+                            onSetWallpaperMode = viewModel::setWallpaperMode,
+                            onSetWallpaperSinglePhoto = viewModel::setWallpaperSinglePhoto,
+                            onSetWallpaperScheduleEntry = viewModel::setWallpaperScheduleEntry,
+                            onRemoveWallpaperScheduleEntry = viewModel::removeWallpaperScheduleEntry,
                             onCustomizeDashboard = { showCustomizeScreen = true },
                             onChangeName = { forceNameEntry = true },
                             onChangeHomeNetwork = { forceHomeNetworkEntry = true }

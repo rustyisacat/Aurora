@@ -1,6 +1,9 @@
 package com.rusty.aurora.ui
 
+import android.net.Uri
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -13,6 +16,8 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -24,6 +29,7 @@ import androidx.compose.material.icons.outlined.BatteryChargingFull
 import androidx.compose.material.icons.outlined.BatteryStd
 import androidx.compose.material.icons.outlined.Bolt
 import androidx.compose.material.icons.outlined.CalendarToday
+import androidx.compose.material.icons.outlined.Close
 import androidx.compose.material.icons.outlined.Cloud
 import androidx.compose.material.icons.outlined.ContentCopy
 import androidx.compose.material.icons.outlined.Dashboard
@@ -34,25 +40,44 @@ import androidx.compose.material.icons.outlined.LibraryMusic
 import androidx.compose.material.icons.outlined.Notifications
 import androidx.compose.material.icons.outlined.PhotoLibrary
 import androidx.compose.material.icons.outlined.WbSunny
+import androidx.compose.material.icons.outlined.Wallpaper
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.material3.TimePicker
+import androidx.compose.material3.rememberTimePickerState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.window.Dialog
+import coil3.compose.AsyncImage
 import com.rusty.aurora.calendar.CalendarEvent
 import com.rusty.aurora.model.ServerStatus
+import com.rusty.aurora.photo.PhotoInfo
+import com.rusty.aurora.photo.WallpaperMode
+import com.rusty.aurora.photo.WallpaperScheduleEntry
 import com.rusty.aurora.ui.theme.AuroraTextSecondary
 import com.rusty.aurora.ui.theme.AuroraTextTertiary
 
@@ -75,6 +100,10 @@ fun AuroraScreen(
     onChoosePhotos: () -> Unit,
     onRequestDndAccess: () -> Unit,
     onToggleAppBlocked: (String, Boolean) -> Unit,
+    onSetWallpaperMode: (WallpaperMode) -> Unit,
+    onSetWallpaperSinglePhoto: (String) -> Unit,
+    onSetWallpaperScheduleEntry: (String, String) -> Unit,
+    onRemoveWallpaperScheduleEntry: (String) -> Unit,
     onCustomizeDashboard: () -> Unit,
     onChangeName: () -> Unit,
     onChangeHomeNetwork: () -> Unit,
@@ -183,6 +212,16 @@ fun AuroraScreen(
                 Icon(Icons.Outlined.PhotoLibrary, contentDescription = null, modifier = Modifier.size(18.dp))
                 Spacer(Modifier.width(8.dp))
                 Text("Choose Photos")
+            }
+
+            if (uiState.wallpaperPhotos.isNotEmpty()) {
+                WallpaperCard(
+                    uiState = uiState,
+                    onSetMode = onSetWallpaperMode,
+                    onSetSinglePhoto = onSetWallpaperSinglePhoto,
+                    onSetScheduleEntry = onSetWallpaperScheduleEntry,
+                    onRemoveScheduleEntry = onRemoveWallpaperScheduleEntry
+                )
             }
 
             Button(
@@ -356,6 +395,221 @@ private fun NotificationAppsCard(uiState: AuroraUiState, onToggleBlocked: (Strin
                     checked = !app.blocked,
                     onCheckedChange = { shown -> onToggleBlocked(app.packageName, !shown) }
                 )
+            }
+        }
+    }
+}
+
+/** Controls what the dashboard's main-screen wallpaper shows - rotating
+ *  through the whole library (the original, still-default behavior), one
+ *  fixed photo, or a schedule of photo changes by time of day. Only shown
+ *  once at least one photo's been picked (see "Choose Photos" above) -
+ *  there's nothing to configure with an empty library. */
+@Composable
+private fun WallpaperCard(
+    uiState: AuroraUiState,
+    onSetMode: (WallpaperMode) -> Unit,
+    onSetSinglePhoto: (String) -> Unit,
+    onSetScheduleEntry: (String, String) -> Unit,
+    onRemoveScheduleEntry: (String) -> Unit
+) {
+    AuroraCard(title = "Wallpaper", icon = Icons.Outlined.Wallpaper) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text("Rotate automatically", style = MaterialTheme.typography.bodyMedium)
+            Switch(
+                checked = uiState.wallpaperMode == WallpaperMode.ROTATING,
+                onCheckedChange = { rotating ->
+                    // Turning rotation off has to land somewhere concrete -
+                    // Single is the simpler of the two remaining modes, and
+                    // the chips below let it be changed to Schedule right
+                    // away if that's what's actually wanted.
+                    onSetMode(if (rotating) WallpaperMode.ROTATING else WallpaperMode.SINGLE)
+                }
+            )
+        }
+
+        if (uiState.wallpaperMode != WallpaperMode.ROTATING) {
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                FilterChip(
+                    selected = uiState.wallpaperMode == WallpaperMode.SINGLE,
+                    onClick = { onSetMode(WallpaperMode.SINGLE) },
+                    label = { Text("Single") }
+                )
+                FilterChip(
+                    selected = uiState.wallpaperMode == WallpaperMode.SCHEDULED,
+                    onClick = { onSetMode(WallpaperMode.SCHEDULED) },
+                    label = { Text("Schedule") }
+                )
+            }
+
+            when (uiState.wallpaperMode) {
+                WallpaperMode.SINGLE -> {
+                    if (uiState.wallpaperSinglePhotoId == null) {
+                        Text(
+                            "Tap a photo to use it as the wallpaper.",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = AuroraTextSecondary
+                        )
+                    }
+                    PhotoThumbnailRow(
+                        photos = uiState.wallpaperPhotos,
+                        selectedId = uiState.wallpaperSinglePhotoId,
+                        onSelect = onSetSinglePhoto
+                    )
+                }
+                WallpaperMode.SCHEDULED -> WallpaperScheduleEditor(
+                    photos = uiState.wallpaperPhotos,
+                    schedule = uiState.wallpaperSchedule,
+                    onAdd = onSetScheduleEntry,
+                    onRemove = onRemoveScheduleEntry
+                )
+                WallpaperMode.ROTATING -> Unit
+            }
+        }
+    }
+}
+
+@Composable
+private fun PhotoThumbnailRow(photos: List<PhotoInfo>, selectedId: String?, onSelect: (String) -> Unit) {
+    LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        items(photos, key = { it.id }) { photo ->
+            val selected = photo.id == selectedId
+            AsyncImage(
+                model = Uri.parse(photo.uriString),
+                contentDescription = null,
+                contentScale = ContentScale.Crop,
+                modifier = Modifier
+                    .size(56.dp)
+                    .clip(RoundedCornerShape(10.dp))
+                    .border(
+                        width = if (selected) 2.dp else 0.dp,
+                        color = if (selected) MaterialTheme.colorScheme.primary else Color.Transparent,
+                        shape = RoundedCornerShape(10.dp)
+                    )
+                    .clickable { onSelect(photo.id) }
+            )
+        }
+    }
+}
+
+@Composable
+private fun WallpaperScheduleEditor(
+    photos: List<PhotoInfo>,
+    schedule: List<WallpaperScheduleEntry>,
+    onAdd: (String, String) -> Unit,
+    onRemove: (String) -> Unit
+) {
+    var showAddDialog by remember { mutableStateOf(false) }
+
+    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        if (schedule.isEmpty()) {
+            Text(
+                "No scheduled changes yet - add one below. The dashboard shows " +
+                    "whichever entry's time has most recently passed.",
+                style = MaterialTheme.typography.bodyMedium,
+                color = AuroraTextSecondary
+            )
+        } else {
+            schedule.forEach { entry ->
+                val photo = photos.firstOrNull { it.id == entry.photoId }
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(10.dp)
+                ) {
+                    if (photo != null) {
+                        AsyncImage(
+                            model = Uri.parse(photo.uriString),
+                            contentDescription = null,
+                            contentScale = ContentScale.Crop,
+                            modifier = Modifier
+                                .size(40.dp)
+                                .clip(RoundedCornerShape(8.dp))
+                        )
+                    }
+                    Text(
+                        formatTime12h(entry.time),
+                        style = MaterialTheme.typography.bodyMedium,
+                        modifier = Modifier.weight(1f)
+                    )
+                    IconButton(onClick = { onRemove(entry.time) }) {
+                        Icon(Icons.Outlined.Close, contentDescription = "Remove", modifier = Modifier.size(18.dp))
+                    }
+                }
+            }
+        }
+
+        OutlinedButton(
+            onClick = { showAddDialog = true },
+            enabled = photos.isNotEmpty(),
+            shape = RoundedCornerShape(14.dp),
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Text("Add Scheduled Wallpaper")
+        }
+    }
+
+    if (showAddDialog) {
+        AddScheduleEntryDialog(
+            photos = photos,
+            onConfirm = { time, photoId ->
+                onAdd(time, photoId)
+                showAddDialog = false
+            },
+            onDismiss = { showAddDialog = false }
+        )
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun AddScheduleEntryDialog(
+    photos: List<PhotoInfo>,
+    onConfirm: (String, String) -> Unit,
+    onDismiss: () -> Unit
+) {
+    val timePickerState = rememberTimePickerState(is24Hour = false)
+    var selectedPhotoId by remember { mutableStateOf<String?>(null) }
+
+    Dialog(onDismissRequest = onDismiss) {
+        Surface(
+            shape = RoundedCornerShape(20.dp),
+            color = MaterialTheme.colorScheme.surface
+        ) {
+            Column(
+                modifier = Modifier.padding(20.dp),
+                verticalArrangement = Arrangement.spacedBy(14.dp)
+            ) {
+                Text(
+                    "Add Scheduled Wallpaper",
+                    style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.SemiBold)
+                )
+                TimePicker(state = timePickerState)
+                Text("Photo", style = MaterialTheme.typography.labelMedium, color = AuroraTextSecondary)
+                PhotoThumbnailRow(
+                    photos = photos,
+                    selectedId = selectedPhotoId,
+                    onSelect = { selectedPhotoId = it }
+                )
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.End,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    TextButton(onClick = onDismiss) { Text("Cancel") }
+                    TextButton(
+                        onClick = {
+                            val photoId = selectedPhotoId ?: return@TextButton
+                            val time = "%02d:%02d".format(timePickerState.hour, timePickerState.minute)
+                            onConfirm(time, photoId)
+                        },
+                        enabled = selectedPhotoId != null
+                    ) { Text("Add") }
+                }
             }
         }
     }

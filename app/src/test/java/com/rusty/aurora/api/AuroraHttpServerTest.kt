@@ -12,6 +12,9 @@ import com.rusty.aurora.layout.TileConfig
 import com.rusty.aurora.notifications.DndRepository
 import com.rusty.aurora.notifications.NotificationCountRepositoryImpl
 import com.rusty.aurora.notifications.NotificationGroup
+import com.rusty.aurora.photo.WallpaperConfigRepository
+import com.rusty.aurora.photo.WallpaperMode
+import com.rusty.aurora.photo.WallpaperScheduleEntry
 import com.rusty.aurora.profile.UserProfileRepository
 import com.rusty.aurora.sound.SoundInfo
 import com.rusty.aurora.sound.SoundMachineState
@@ -46,7 +49,8 @@ class AuroraHttpServerTest {
             """{"id":"schedule","visible":true,"size":"medium"},""" +
             """{"id":"alarm","visible":true,"size":"small"},""" +
             """{"id":"sound","visible":true,"size":"large"}],"userName":null,"dndEnabled":false,""" +
-            """"chargingEtaMinutes":null}"""
+            """"chargingEtaMinutes":null,"wallpaperMode":"rotating","wallpaperSinglePhotoId":null,""" +
+            """"wallpaperSchedule":[]}"""
 
     private class FakeBatteryRepository(
         private val level: Int,
@@ -91,6 +95,25 @@ class AuroraHttpServerTest {
         override fun isEnabled(): Boolean = enabled
         override fun setEnabled(enabled: Boolean) {
             this.enabled = enabled
+        }
+    }
+
+    private class FakeWallpaperConfigRepository(
+        private var mode: WallpaperMode = WallpaperMode.ROTATING,
+        private var singlePhotoId: String? = null,
+        private var schedule: List<WallpaperScheduleEntry> = emptyList()
+    ) : WallpaperConfigRepository {
+        override fun getMode(): WallpaperMode = mode
+        override fun setMode(mode: WallpaperMode) {
+            this.mode = mode
+        }
+        override fun getSinglePhotoId(): String? = singlePhotoId
+        override fun setSinglePhotoId(photoId: String?) {
+            singlePhotoId = photoId
+        }
+        override fun getSchedule(): List<WallpaperScheduleEntry> = schedule
+        override fun setSchedule(entries: List<WallpaperScheduleEntry>) {
+            schedule = entries
         }
     }
 
@@ -220,7 +243,8 @@ class AuroraHttpServerTest {
                 wakeAlarmRepository = fakeWakeAlarmRepository,
                 layoutRepository = FakeLayoutRepository(),
                 userProfileRepository = FakeUserProfileRepository(),
-                dndRepository = FakeDndRepository()
+                dndRepository = FakeDndRepository(),
+                wallpaperConfigRepository = FakeWallpaperConfigRepository()
             ),
             PlaySoundRoute(fakeSoundRepository),
             PauseSoundRoute(fakeSoundRepository),

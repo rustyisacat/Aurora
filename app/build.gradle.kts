@@ -62,6 +62,12 @@ dependencies {
     implementation(libs.androidx.compose.material3)
     implementation(libs.androidx.compose.material.icons.extended)
 
+    // Coil: the single-wallpaper/schedule picker needs to show actual photo
+    // thumbnails (from content:// Uris already granted via the Photo
+    // Picker) rather than opaque photo IDs - a hand-rolled bitmap loader
+    // would just reimplement Coil's caching/lifecycle-awareness worse.
+    implementation(libs.coil.compose)
+
     // kotlinx.serialization: compile-time-safe JSON encoding for the
     // dashboard model, no reflection - a good fit for a small, stable
     // set of API response types.

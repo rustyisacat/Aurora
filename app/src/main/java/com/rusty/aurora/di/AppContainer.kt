@@ -46,6 +46,8 @@ import com.rusty.aurora.notifications.NotificationCountRepository
 import com.rusty.aurora.notifications.NotificationCountRepositoryImpl
 import com.rusty.aurora.photo.PhotoRepository
 import com.rusty.aurora.photo.PhotoRepositoryImpl
+import com.rusty.aurora.photo.WallpaperConfigRepository
+import com.rusty.aurora.photo.WallpaperConfigRepositoryImpl
 import com.rusty.aurora.profile.UserProfileRepository
 import com.rusty.aurora.profile.UserProfileRepositoryImpl
 import com.rusty.aurora.service.AuroraServerController
@@ -112,6 +114,8 @@ class AppContainer(context: Context) {
     // (PhotoStreamRoute).
     val photoRepository: PhotoRepository = PhotoRepositoryImpl(context)
 
+    val wallpaperConfigRepository: WallpaperConfigRepository = WallpaperConfigRepositoryImpl(context)
+
     val dndRepository: DndRepository = DndRepositoryImpl(context)
 
     val homeNetworkRepository: HomeNetworkRepository = HomeNetworkRepositoryImpl(context)
@@ -130,7 +134,8 @@ class AppContainer(context: Context) {
             wakeAlarmRepository = wakeAlarmRepository,
             layoutRepository = layoutRepository,
             userProfileRepository = userProfileRepository,
-            dndRepository = dndRepository
+            dndRepository = dndRepository,
+            wallpaperConfigRepository = wallpaperConfigRepository
         ),
         PlaySoundRoute(soundRepository),
         PauseSoundRoute(soundRepository),

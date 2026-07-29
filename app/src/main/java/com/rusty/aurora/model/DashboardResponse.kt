@@ -5,6 +5,8 @@ import com.rusty.aurora.calendar.CalendarEvent
 import com.rusty.aurora.layout.DEFAULT_TILE_LAYOUT
 import com.rusty.aurora.layout.TileConfig
 import com.rusty.aurora.notifications.NotificationGroup
+import com.rusty.aurora.photo.WallpaperMode
+import com.rusty.aurora.photo.WallpaperScheduleEntry
 import com.rusty.aurora.sound.SoundMachineState
 import com.rusty.aurora.wakealarm.WakeAlarm
 import com.rusty.aurora.wakealarm.WakeAlarmRingingState
@@ -59,5 +61,13 @@ data class DashboardResponse(
     val dndEnabled: Boolean = false,
     // Null while not charging, or until BatteryRepository has enough
     // charge-rate history for a stable estimate - see ChargingEtaCalculator.
-    val chargingEtaMinutes: Int? = null
+    val chargingEtaMinutes: Int? = null,
+    // Which photo (from PhotoRepository's shared library) the dashboard's
+    // main-screen wallpaper shows, and how: ROTATING ignores the other two
+    // fields entirely (the dashboard cycles the whole library itself, as
+    // before); SINGLE uses wallpaperSinglePhotoId; SCHEDULED uses
+    // wallpaperSchedule - see WallpaperConfigRepository.
+    val wallpaperMode: WallpaperMode = WallpaperMode.ROTATING,
+    val wallpaperSinglePhotoId: String? = null,
+    val wallpaperSchedule: List<WallpaperScheduleEntry> = emptyList()
 )
