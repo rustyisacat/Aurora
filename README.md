@@ -50,7 +50,7 @@ just your phone talking HTTP to a screen on the same network.
 
 - **Live phone status**: battery level/charging state, notification count
   (grouped by app), calendar events (today or tomorrow, see above), next
-  alarm — all polled and served as one JSON snapshot.
+  alarm — all pulled and served as one JSON snapshot.
 - **Weather**: current conditions plus sunrise/sunset via
   [Open-Meteo](https://open-meteo.com/) (no API key needed), resolved from
   the phone's own location, cached and refreshed in the background.
@@ -76,14 +76,14 @@ just your phone talking HTTP to a screen on the same network.
 ┌─────────────────┐        HTTP (LAN, port 8080)        ┌──────────────────┐
 │  Aurora (phone)  │ ───────────────────────────────────▶│  echo-dashboard  │
 │                  │◀─────────────────────────────────── │  (kiosk display) │
-└─────────────────┘        polls every 30s               └──────────────────┘
+└─────────────────┘        pulls every 30s               └──────────────────┘
 ```
 
 Aurora runs an embedded HTTP server ([NanoHTTPD](https://github.com/NanoHttpd/nanohttpd))
 inside a foreground service, independent of whether the app itself is open,
 active only while the phone is on the home Wi-Fi network you've configured.
 The dashboard — a static HTML/CSS/JS kiosk page, see
-[echo-dashboard](https://github.com/rustyisacat/echo-dashboard) — polls it every
+[echo-dashboard](https://github.com/rustyisacat/echo-dashboard) — pulls it every
 30 seconds and renders the result. Both devices just need to be on the
 same Wi-Fi network.
 
