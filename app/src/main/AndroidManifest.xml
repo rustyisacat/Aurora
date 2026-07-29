@@ -29,6 +29,10 @@
          the foreground service (and the server) still runs. -->
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
 
+    <!-- AlarmManager alarms don't survive a reboot on their own -
+         WakeAlarmBootReceiver re-arms every enabled wake alarm on restart. -->
+    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
+
     <application
         android:name=".AuroraApplication"
         android:allowBackup="true"
@@ -79,6 +83,21 @@
                 android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
                 android:value="Serves the bedside dashboard's data to the Echo Show over the home Wi-Fi network" />
         </service>
+
+        <!-- Fired by AlarmManager at each wake alarm's scheduled time. -->
+        <receiver
+            android:name=".wakealarm.WakeAlarmReceiver"
+            android:exported="false" />
+
+        <!-- Re-arms every enabled wake alarm after a reboot - see the
+             RECEIVE_BOOT_COMPLETED permission above. -->
+        <receiver
+            android:name=".wakealarm.WakeAlarmBootReceiver"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="android.intent.action.BOOT_COMPLETED" />
+            </intent-filter>
+        </receiver>
 
     </application>
 

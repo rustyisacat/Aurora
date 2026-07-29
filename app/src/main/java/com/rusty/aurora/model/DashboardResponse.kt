@@ -6,6 +6,8 @@ import com.rusty.aurora.layout.DEFAULT_TILE_LAYOUT
 import com.rusty.aurora.layout.TileConfig
 import com.rusty.aurora.notifications.NotificationGroup
 import com.rusty.aurora.sound.SoundMachineState
+import com.rusty.aurora.wakealarm.WakeAlarm
+import com.rusty.aurora.wakealarm.WakeAlarmRingingState
 import com.rusty.aurora.weather.WeatherSnapshot
 import kotlinx.serialization.Serializable
 
@@ -26,7 +28,13 @@ import kotlinx.serialization.Serializable
  * Morning Briefing greets without a name until then. calendar holds
  * today's events before noon and tomorrow's from noon onward (see
  * CalendarRepository), with calendarShowsTomorrow telling the client which
- * one it's looking at so it can label the list correctly.
+ * one it's looking at so it can label the list correctly. wakeAlarms is
+ * Aurora's own alarm list (separate from nextAlarm, which only reflects
+ * the phone's stock Clock app for display - see AlarmRepository for how
+ * the two are reconciled for scheduling purposes); wakeAlarmRinging tells
+ * the dashboard when to actually start blasting one, and is never null for
+ * the same "well-defined state, not an absence of data" reason as
+ * soundMachine.
  */
 @Serializable
 data class DashboardResponse(
@@ -39,6 +47,8 @@ data class DashboardResponse(
     val calendarShowsTomorrow: Boolean = false,
     val weather: WeatherSnapshot? = null,
     val soundMachine: SoundMachineState,
+    val wakeAlarms: List<WakeAlarm> = emptyList(),
+    val wakeAlarmRinging: WakeAlarmRingingState,
     val layout: List<TileConfig> = DEFAULT_TILE_LAYOUT,
     val userName: String? = null
 )

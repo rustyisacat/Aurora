@@ -8,6 +8,7 @@ import com.rusty.aurora.model.DashboardResponse
 import com.rusty.aurora.notifications.NotificationCountRepository
 import com.rusty.aurora.profile.UserProfileRepository
 import com.rusty.aurora.sound.SoundRepository
+import com.rusty.aurora.wakealarm.WakeAlarmRepository
 import com.rusty.aurora.weather.WeatherRepository
 import fi.iki.elonen.NanoHTTPD
 import fi.iki.elonen.NanoHTTPD.Response.Status
@@ -21,6 +22,7 @@ class DashboardRoute(
     private val alarmRepository: AlarmRepository,
     private val weatherRepository: WeatherRepository,
     private val soundRepository: SoundRepository,
+    private val wakeAlarmRepository: WakeAlarmRepository,
     private val layoutRepository: LayoutRepository,
     private val userProfileRepository: UserProfileRepository
 ) : Route {
@@ -44,6 +46,8 @@ class DashboardRoute(
             calendarShowsTomorrow = calendarRepository.isShowingTomorrow(),
             weather = weatherRepository.getWeather(),
             soundMachine = soundRepository.getState(),
+            wakeAlarms = wakeAlarmRepository.getAlarms(),
+            wakeAlarmRinging = wakeAlarmRepository.getRingingState(),
             layout = layoutRepository.getLayout(),
             userName = userProfileRepository.getUserName()
         )

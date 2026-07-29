@@ -5,11 +5,16 @@ import com.rusty.aurora.alarm.AlarmRepository
 import com.rusty.aurora.alarm.AlarmRepositoryImpl
 import com.rusty.aurora.api.AuroraHttpServer
 import com.rusty.aurora.api.DashboardRoute
+import com.rusty.aurora.api.DeleteWakeAlarmRoute
+import com.rusty.aurora.api.DismissWakeAlarmRoute
+import com.rusty.aurora.api.GetWakeAlarmsRoute
 import com.rusty.aurora.api.HealthRoute
 import com.rusty.aurora.api.PauseSoundRoute
 import com.rusty.aurora.api.PlaySoundRoute
 import com.rusty.aurora.api.SetSleepTimerRoute
 import com.rusty.aurora.api.SetVolumeRoute
+import com.rusty.aurora.api.SetWakeAlarmRoute
+import com.rusty.aurora.api.SnoozeWakeAlarmRoute
 import com.rusty.aurora.api.SoundLibraryRoute
 import com.rusty.aurora.api.SoundStreamRoute
 import com.rusty.aurora.api.StopSoundRoute
@@ -33,13 +38,16 @@ import com.rusty.aurora.service.AuroraServerController
 import com.rusty.aurora.sound.SoundLibrary
 import com.rusty.aurora.sound.SoundRepository
 import com.rusty.aurora.sound.SoundRepositoryImpl
+import com.rusty.aurora.wakealarm.WakeAlarmRepository
+import com.rusty.aurora.wakealarm.WakeAlarmRepositoryImpl
+import com.rusty.aurora.wakealarm.WakeAlarmScheduler
 import com.rusty.aurora.weather.WeatherRepository
 import com.rusty.aurora.weather.WeatherRepositoryImpl
 
 /**
  * Hand-rolled composition root.
  *
- * Nine repositories plus a network monitor is still comfortably within
+ * Ten repositories plus a network monitor is still comfortably within
  * "wire it by hand" territory -
  * a DI framework would add build time and APK size for no benefit yet.
  * Every class still takes its dependencies through its constructor, so the
@@ -53,7 +61,10 @@ class AppContainer(context: Context) {
 
     val calendarRepository: CalendarRepository = CalendarRepositoryImpl(context)
 
-    val alarmRepository: AlarmRepository = AlarmRepositoryImpl(context)
+    val wakeAlarmRepository: WakeAlarmRepository =
+        WakeAlarmRepositoryImpl(context, WakeAlarmScheduler(context))
+
+    val alarmRepository: AlarmRepository = AlarmRepositoryImpl(context, wakeAlarmRepository)
 
     val locationRepository: LocationRepository = LocationRepositoryImpl(context)
 
@@ -83,6 +94,7 @@ class AppContainer(context: Context) {
             alarmRepository = alarmRepository,
             weatherRepository = weatherRepository,
             soundRepository = soundRepository,
+            wakeAlarmRepository = wakeAlarmRepository,
             layoutRepository = layoutRepository,
             userProfileRepository = userProfileRepository
         ),
@@ -92,7 +104,12 @@ class AppContainer(context: Context) {
         SetVolumeRoute(soundRepository),
         SetSleepTimerRoute(soundRepository),
         SoundLibraryRoute(soundRepository),
-        SoundStreamRoute(soundRepository)
+        SoundStreamRoute(soundRepository),
+        GetWakeAlarmsRoute(wakeAlarmRepository),
+        SetWakeAlarmRoute(wakeAlarmRepository),
+        DeleteWakeAlarmRoute(wakeAlarmRepository),
+        DismissWakeAlarmRoute(wakeAlarmRepository),
+        SnoozeWakeAlarmRoute(wakeAlarmRepository)
     )
 
     val serverController = AuroraServerController { port -> AuroraHttpServer(port, routes) }

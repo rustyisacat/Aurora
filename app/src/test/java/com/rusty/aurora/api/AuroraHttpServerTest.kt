@@ -17,6 +17,9 @@ import com.rusty.aurora.sound.SoundMachineState
 import com.rusty.aurora.sound.SoundRepository
 import com.rusty.aurora.sound.SoundSource
 import com.rusty.aurora.sound.SoundStream
+import com.rusty.aurora.wakealarm.WakeAlarm
+import com.rusty.aurora.wakealarm.WakeAlarmRepository
+import com.rusty.aurora.wakealarm.WakeAlarmRingingState
 import com.rusty.aurora.weather.WeatherRepository
 import com.rusty.aurora.weather.WeatherSnapshot
 import org.junit.After
@@ -81,6 +84,39 @@ class AuroraHttpServerTest {
         }
     }
 
+    private class FakeWakeAlarmRepository(
+        private var alarms: List<WakeAlarm> = emptyList(),
+        private var ringing: WakeAlarmRingingState = WakeAlarmRingingState()
+    ) : WakeAlarmRepository {
+        var lastDeletedId: String? = null
+            private set
+        var dismissCalled = false
+            private set
+        var lastSnoozeMinutes: Int? = null
+            private set
+
+        override fun getAlarms(): List<WakeAlarm> = alarms
+        override fun setAlarm(alarm: WakeAlarm) {
+            alarms = alarms.filterNot { it.id == alarm.id } + alarm
+        }
+        override fun deleteAlarm(id: String) {
+            lastDeletedId = id
+            alarms = alarms.filterNot { it.id == id }
+        }
+        override fun getRingingState(): WakeAlarmRingingState = ringing
+        override fun handleFired(alarmId: String) = throw UnsupportedOperationException("not exercised by these tests")
+        override fun dismiss() {
+            dismissCalled = true
+            ringing = WakeAlarmRingingState()
+        }
+        override fun snooze(minutes: Int) {
+            lastSnoozeMinutes = minutes
+            ringing = WakeAlarmRingingState()
+        }
+        override fun rearmAll() = throw UnsupportedOperationException("not exercised by these tests")
+        override fun getEarliestEnabledTriggerMillis(): Long? = null
+    }
+
     private class FakeSoundRepository(
         private var state: SoundMachineState = SoundMachineState(
             playing = false,
@@ -139,6 +175,7 @@ class AuroraHttpServerTest {
 
     private var server: AuroraHttpServer? = null
     private lateinit var fakeSoundRepository: FakeSoundRepository
+    private lateinit var fakeWakeAlarmRepository: FakeWakeAlarmRepository
 
     @After
     fun stopServer() {
@@ -149,9 +186,12 @@ class AuroraHttpServerTest {
         calendarEvents: List<CalendarEvent> = emptyList(),
         nextAlarm: NextAlarm? = null,
         weather: WeatherSnapshot? = null,
-        notificationGroups: List<NotificationGroup> = emptyList()
+        notificationGroups: List<NotificationGroup> = emptyList(),
+        wakeAlarms: List<WakeAlarm> = emptyList(),
+        wakeAlarmRinging: WakeAlarmRingingState = WakeAlarmRingingState()
     ): String {
         fakeSoundRepository = FakeSoundRepository()
+        fakeWakeAlarmRepository = FakeWakeAlarmRepository(wakeAlarms, wakeAlarmRinging)
         val routes = listOf(
             HealthRoute(),
             DashboardRoute(
@@ -161,6 +201,7 @@ class AuroraHttpServerTest {
                 alarmRepository = FakeAlarmRepository(nextAlarm),
                 weatherRepository = FakeWeatherRepository(weather),
                 soundRepository = fakeSoundRepository,
+                wakeAlarmRepository = fakeWakeAlarmRepository,
                 layoutRepository = FakeLayoutRepository(),
                 userProfileRepository = FakeUserProfileRepository()
             ),
@@ -170,7 +211,12 @@ class AuroraHttpServerTest {
             SetVolumeRoute(fakeSoundRepository),
             SetSleepTimerRoute(fakeSoundRepository),
             SoundLibraryRoute(fakeSoundRepository),
-            SoundStreamRoute(fakeSoundRepository)
+            SoundStreamRoute(fakeSoundRepository),
+            GetWakeAlarmsRoute(fakeWakeAlarmRepository),
+            SetWakeAlarmRoute(fakeWakeAlarmRepository),
+            DeleteWakeAlarmRoute(fakeWakeAlarmRepository),
+            DismissWakeAlarmRoute(fakeWakeAlarmRepository),
+            SnoozeWakeAlarmRoute(fakeWakeAlarmRepository)
         )
 
         // Port 0: the OS assigns a free ephemeral port, so tests never collide
@@ -214,6 +260,8 @@ class AuroraHttpServerTest {
                 """"calendarShowsTomorrow":false,""" +
                 """"weather":{"temperature":74,"condition":"Clear","high":86,"low":68,"timezone":"America/New_York","sunrise":"06:15","sunset":"20:42"},""" +
                 """"soundMachine":{"playing":false,"sound":null,"volume":50,"sleepTimerMinutes":null},""" +
+                """"wakeAlarms":[],""" +
+                """"wakeAlarmRinging":{"ringing":false,"alarmId":null,"label":"","soundId":null},""" +
                 DEFAULT_LAYOUT_JSON,
             body
         )
@@ -229,6 +277,8 @@ class AuroraHttpServerTest {
             """{"battery":77,"charging":true,"notifications":0,"notificationGroups":[],""" +
                 """"nextAlarm":null,"calendar":[],"calendarShowsTomorrow":false,"weather":null,""" +
                 """"soundMachine":{"playing":false,"sound":null,"volume":50,"sleepTimerMinutes":null},""" +
+                """"wakeAlarms":[],""" +
+                """"wakeAlarmRinging":{"ringing":false,"alarmId":null,"label":"","soundId":null},""" +
                 DEFAULT_LAYOUT_JSON,
             body
         )
