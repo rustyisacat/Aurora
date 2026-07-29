@@ -48,6 +48,7 @@ class DashboardRoute(
             soundMachine = soundRepository.getState(),
             wakeAlarms = wakeAlarmRepository.getAlarms(),
             wakeAlarmRinging = wakeAlarmRepository.getRingingState(),
+            defaultAlarmSoundId = wakeAlarmRepository.getDefaultAlarmSoundId(),
             layout = layoutRepository.getLayout(),
             userName = userProfileRepository.getUserName()
         )

@@ -39,4 +39,13 @@ interface WakeAlarmRepository {
      *  machine's "until alarm" sleep timer preset stays meaningful
      *  regardless of which alarm system the user actually wakes up to. */
     fun getEarliestEnabledTriggerMillis(): Long?
+
+    /** Which sound an alarm rings with when it has no [WakeAlarm.soundId]
+     *  of its own - null until the user picks one from the dashboard, at
+     *  which point [handleFired] falls back to the sound library's own
+     *  first entry, same as SoundRepository.play(null) does for the
+     *  ambient sound machine. */
+    fun getDefaultAlarmSoundId(): String?
+
+    fun setDefaultAlarmSoundId(id: String)
 }

@@ -1,12 +1,14 @@
 package com.rusty.aurora.wakealarm
 
 import android.content.Context
+import com.rusty.aurora.sound.SoundLibrary
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 
 class WakeAlarmRepositoryImpl(
     context: Context,
-    private val scheduler: WakeAlarmScheduler
+    private val scheduler: WakeAlarmScheduler,
+    private val soundLibrary: SoundLibrary
 ) : WakeAlarmRepository {
 
     private val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
@@ -17,6 +19,9 @@ class WakeAlarmRepositoryImpl(
 
     @Volatile
     private var ringingState: WakeAlarmRingingState = loadRingingState()
+
+    @Volatile
+    private var defaultAlarmSoundId: String? = prefs.getString(KEY_DEFAULT_ALARM_SOUND, null)
 
     override fun getAlarms(): List<WakeAlarm> = alarms
 
@@ -36,8 +41,9 @@ class WakeAlarmRepositoryImpl(
 
     override fun handleFired(alarmId: String) {
         val alarm = alarms.find { it.id == alarmId } ?: return
+        val soundId = alarm.soundId ?: defaultAlarmSoundId ?: soundLibrary.getAll().firstOrNull()?.id
         ringingState = WakeAlarmRingingState(
-            ringing = true, alarmId = alarm.id, label = alarm.label, soundId = alarm.soundId
+            ringing = true, alarmId = alarm.id, label = alarm.label, soundId = soundId
         )
         persistRingingState()
 
@@ -72,6 +78,13 @@ class WakeAlarmRepositoryImpl(
             .map { NextTriggerCalculator.nextTriggerMillis(it.hour, it.minute, it.daysOfWeek, System.currentTimeMillis()) }
             .minOrNull()
 
+    override fun getDefaultAlarmSoundId(): String? = defaultAlarmSoundId
+
+    override fun setDefaultAlarmSoundId(id: String) {
+        defaultAlarmSoundId = id
+        prefs.edit().putString(KEY_DEFAULT_ALARM_SOUND, id).apply()
+    }
+
     private fun loadAlarms(): List<WakeAlarm> =
         prefs.getString(KEY_ALARMS, null)?.let {
             runCatching { json.decodeFromString<List<WakeAlarm>>(it) }.getOrNull()
@@ -94,5 +107,6 @@ class WakeAlarmRepositoryImpl(
         const val PREFS_NAME = "aurora_wake_alarms"
         const val KEY_ALARMS = "alarms"
         const val KEY_RINGING = "ringing_state"
+        const val KEY_DEFAULT_ALARM_SOUND = "default_alarm_sound_id"
     }
 }

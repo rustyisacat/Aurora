@@ -103,3 +103,15 @@ class SnoozeWakeAlarmRoute(private val wakeAlarmRepository: WakeAlarmRepository)
         const val DEFAULT_SNOOZE_MINUTES = 9
     }
 }
+
+class SetDefaultAlarmSoundRoute(private val wakeAlarmRepository: WakeAlarmRepository) : Route {
+    override fun matches(session: NanoHTTPD.IHTTPSession): Boolean =
+        session.method == NanoHTTPD.Method.POST && session.uri == "/wakealarms/default-sound"
+
+    override fun handle(session: NanoHTTPD.IHTTPSession): NanoHTTPD.Response {
+        val id = session.singleParam("id")?.takeIf { it.isNotBlank() }
+            ?: return NanoHTTPD.newFixedLengthResponse(Status.BAD_REQUEST, "text/plain", "Missing 'id'")
+        wakeAlarmRepository.setDefaultAlarmSoundId(id)
+        return okResponse()
+    }
+}

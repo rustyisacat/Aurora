@@ -34,7 +34,8 @@ import kotlinx.serialization.Serializable
  * the two are reconciled for scheduling purposes); wakeAlarmRinging tells
  * the dashboard when to actually start blasting one, and is never null for
  * the same "well-defined state, not an absence of data" reason as
- * soundMachine.
+ * soundMachine. defaultAlarmSoundId is null until the user picks one from
+ * the dashboard - see WakeAlarmRepository.getDefaultAlarmSoundId.
  */
 @Serializable
 data class DashboardResponse(
@@ -49,6 +50,7 @@ data class DashboardResponse(
     val soundMachine: SoundMachineState,
     val wakeAlarms: List<WakeAlarm> = emptyList(),
     val wakeAlarmRinging: WakeAlarmRingingState,
+    val defaultAlarmSoundId: String? = null,
     val layout: List<TileConfig> = DEFAULT_TILE_LAYOUT,
     val userName: String? = null
 )

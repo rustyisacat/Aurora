@@ -13,6 +13,7 @@ import com.rusty.aurora.api.PauseSoundRoute
 import com.rusty.aurora.api.PlaySoundRoute
 import com.rusty.aurora.api.SetSleepTimerRoute
 import com.rusty.aurora.api.SetVolumeRoute
+import com.rusty.aurora.api.SetDefaultAlarmSoundRoute
 import com.rusty.aurora.api.SetWakeAlarmRoute
 import com.rusty.aurora.api.SnoozeWakeAlarmRoute
 import com.rusty.aurora.api.SoundLibraryRoute
@@ -61,8 +62,14 @@ class AppContainer(context: Context) {
 
     val calendarRepository: CalendarRepository = CalendarRepositoryImpl(context)
 
+    // Hoisted to a shared instance (rather than built inline for
+    // SoundRepositoryImpl, as before) so WakeAlarmRepositoryImpl can also
+    // read it - it needs a sensible library-wide fallback sound for alarms
+    // that have neither their own soundId nor a configured default.
+    val soundLibrary: SoundLibrary = SoundLibrary(context)
+
     val wakeAlarmRepository: WakeAlarmRepository =
-        WakeAlarmRepositoryImpl(context, WakeAlarmScheduler(context))
+        WakeAlarmRepositoryImpl(context, WakeAlarmScheduler(context), soundLibrary)
 
     val alarmRepository: AlarmRepository = AlarmRepositoryImpl(context, wakeAlarmRepository)
 
@@ -75,7 +82,7 @@ class AppContainer(context: Context) {
     // kiosk browser is the actual audio engine. See SoundRepository's doc
     // comment.
     val soundRepository: SoundRepository =
-        SoundRepositoryImpl(context, SoundLibrary(context), alarmRepository)
+        SoundRepositoryImpl(context, soundLibrary, alarmRepository)
 
     val layoutRepository: LayoutRepository = LayoutRepositoryImpl(context)
 
@@ -109,7 +116,8 @@ class AppContainer(context: Context) {
         SetWakeAlarmRoute(wakeAlarmRepository),
         DeleteWakeAlarmRoute(wakeAlarmRepository),
         DismissWakeAlarmRoute(wakeAlarmRepository),
-        SnoozeWakeAlarmRoute(wakeAlarmRepository)
+        SnoozeWakeAlarmRoute(wakeAlarmRepository),
+        SetDefaultAlarmSoundRoute(wakeAlarmRepository)
     )
 
     val serverController = AuroraServerController { port -> AuroraHttpServer(port, routes) }

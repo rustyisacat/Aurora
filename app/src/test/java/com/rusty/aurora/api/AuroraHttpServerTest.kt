@@ -115,6 +115,12 @@ class AuroraHttpServerTest {
         }
         override fun rearmAll() = throw UnsupportedOperationException("not exercised by these tests")
         override fun getEarliestEnabledTriggerMillis(): Long? = null
+
+        private var defaultAlarmSoundId: String? = null
+        override fun getDefaultAlarmSoundId(): String? = defaultAlarmSoundId
+        override fun setDefaultAlarmSoundId(id: String) {
+            defaultAlarmSoundId = id
+        }
     }
 
     private class FakeSoundRepository(
@@ -262,6 +268,7 @@ class AuroraHttpServerTest {
                 """"soundMachine":{"playing":false,"sound":null,"volume":50,"sleepTimerMinutes":null},""" +
                 """"wakeAlarms":[],""" +
                 """"wakeAlarmRinging":{"ringing":false,"alarmId":null,"label":"","soundId":null},""" +
+                """"defaultAlarmSoundId":null,""" +
                 DEFAULT_LAYOUT_JSON,
             body
         )
@@ -279,6 +286,7 @@ class AuroraHttpServerTest {
                 """"soundMachine":{"playing":false,"sound":null,"volume":50,"sleepTimerMinutes":null},""" +
                 """"wakeAlarms":[],""" +
                 """"wakeAlarmRinging":{"ringing":false,"alarmId":null,"label":"","soundId":null},""" +
+                """"defaultAlarmSoundId":null,""" +
                 DEFAULT_LAYOUT_JSON,
             body
         )
