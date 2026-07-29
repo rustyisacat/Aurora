@@ -33,7 +33,6 @@ import androidx.compose.material.icons.outlined.Grain
 import androidx.compose.material.icons.outlined.LibraryMusic
 import androidx.compose.material.icons.outlined.Notifications
 import androidx.compose.material.icons.outlined.PhotoLibrary
-import androidx.compose.material.icons.outlined.Wallpaper
 import androidx.compose.material.icons.outlined.WbSunny
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -73,7 +72,7 @@ fun AuroraScreen(
     onRequestPostNotificationsPermission: () -> Unit,
     onImportCustomSound: () -> Unit,
     onChoosePhotos: () -> Unit,
-    onChooseWallpaper: () -> Unit,
+    onRequestDndAccess: () -> Unit,
     onCustomizeDashboard: () -> Unit,
     onChangeName: () -> Unit,
     onChangeHomeNetwork: () -> Unit,
@@ -126,6 +125,14 @@ fun AuroraScreen(
                     onGrant = onRequestPostNotificationsPermission
                 )
             }
+            if (!uiState.hasDndAccess) {
+                PermissionCard(
+                    message = "Do Not Disturb access is off - the dashboard's DND toggle won't be " +
+                        "able to actually change it until it's granted.",
+                    buttonLabel = "Grant Do Not Disturb Access",
+                    onGrant = onRequestDndAccess
+                )
+            }
 
             OutlinedButton(
                 onClick = { uiState.dashboardUrl?.let(onCopyDashboardUrl) },
@@ -153,13 +160,16 @@ fun AuroraScreen(
                 Text("Import Custom Sound")
             }
 
-            // Ambient Mode's photo background needs the on-device Photo
-            // Picker, which only this screen can launch - same reasoning as
-            // the custom sound import above. No storage permission needed:
-            // the modern Photo Picker grants read access to just the images
-            // actually selected. Replaces the whole rotation each time it's
-            // run, rather than adding to it - the picker itself has no way
-            // to show which photos are already chosen to add alongside.
+            // Drives both Ambient Mode's photo rotation and the main
+            // dashboard's wallpaper (which also extracts its accent color
+            // from whatever's picked) - one shared photo set for both, not
+            // two separate pickers. Needs the on-device Photo Picker, which
+            // only this screen can launch - same reasoning as the custom
+            // sound import above. No storage permission needed: the modern
+            // Photo Picker grants read access to just the images actually
+            // selected. Replaces the whole set each time it's run, rather
+            // than adding to it - the picker itself has no way to show
+            // which photos are already chosen to add alongside.
             OutlinedButton(
                 onClick = onChoosePhotos,
                 shape = RoundedCornerShape(14.dp),
@@ -167,21 +177,7 @@ fun AuroraScreen(
             ) {
                 Icon(Icons.Outlined.PhotoLibrary, contentDescription = null, modifier = Modifier.size(18.dp))
                 Spacer(Modifier.width(8.dp))
-                Text("Choose Ambient Photos")
-            }
-
-            // The main dashboard's wallpaper - a single image, separate from
-            // Ambient Mode's rotation above. The Echo Show also extracts an
-            // accent color from whatever's picked here, so the whole
-            // dashboard's theme follows it once set.
-            OutlinedButton(
-                onClick = onChooseWallpaper,
-                shape = RoundedCornerShape(14.dp),
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Icon(Icons.Outlined.Wallpaper, contentDescription = null, modifier = Modifier.size(18.dp))
-                Spacer(Modifier.width(8.dp))
-                Text("Choose Wallpaper")
+                Text("Choose Photos")
             }
 
             Button(

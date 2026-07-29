@@ -9,6 +9,7 @@ import com.rusty.aurora.calendar.CalendarRepository
 import com.rusty.aurora.layout.DEFAULT_TILE_LAYOUT
 import com.rusty.aurora.layout.LayoutRepository
 import com.rusty.aurora.layout.TileConfig
+import com.rusty.aurora.notifications.DndRepository
 import com.rusty.aurora.notifications.NotificationCountRepositoryImpl
 import com.rusty.aurora.notifications.NotificationGroup
 import com.rusty.aurora.profile.UserProfileRepository
@@ -44,7 +45,7 @@ class AuroraHttpServerTest {
             """{"id":"notifications","visible":true,"size":"large"},""" +
             """{"id":"schedule","visible":true,"size":"medium"},""" +
             """{"id":"alarm","visible":true,"size":"small"},""" +
-            """{"id":"sound","visible":true,"size":"large"}],"userName":null}"""
+            """{"id":"sound","visible":true,"size":"large"}],"userName":null,"dndEnabled":false}"""
 
     private class FakeBatteryRepository(
         private val level: Int,
@@ -81,6 +82,13 @@ class AuroraHttpServerTest {
         override fun getUserName(): String? = name
         override fun setUserName(name: String) {
             this.name = name
+        }
+    }
+
+    private class FakeDndRepository(private var enabled: Boolean = false) : DndRepository {
+        override fun isEnabled(): Boolean = enabled
+        override fun setEnabled(enabled: Boolean) {
+            this.enabled = enabled
         }
     }
 
@@ -209,7 +217,8 @@ class AuroraHttpServerTest {
                 soundRepository = fakeSoundRepository,
                 wakeAlarmRepository = fakeWakeAlarmRepository,
                 layoutRepository = FakeLayoutRepository(),
-                userProfileRepository = FakeUserProfileRepository()
+                userProfileRepository = FakeUserProfileRepository(),
+                dndRepository = FakeDndRepository()
             ),
             PlaySoundRoute(fakeSoundRepository),
             PauseSoundRoute(fakeSoundRepository),
@@ -264,7 +273,7 @@ class AuroraHttpServerTest {
                 """"nextAlarm":{"time":"07:00","enabled":true},""" +
                 """"calendar":[{"title":"School","start":"08:00","end":"15:00","allDay":false}],""" +
                 """"calendarShowsTomorrow":false,""" +
-                """"weather":{"temperature":74,"condition":"Clear","high":86,"low":68,"timezone":"America/New_York","sunrise":"06:15","sunset":"20:42"},""" +
+                """"weather":{"temperature":74,"condition":"Clear","high":86,"low":68,"timezone":"America/New_York","sunrise":"06:15","sunset":"20:42","rainExpectedAt":null},""" +
                 """"soundMachine":{"playing":false,"sound":null,"volume":50,"sleepTimerMinutes":null},""" +
                 """"wakeAlarms":[],""" +
                 """"wakeAlarmRinging":{"ringing":false,"alarmId":null,"label":"","soundId":null},""" +

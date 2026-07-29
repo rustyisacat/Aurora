@@ -19,10 +19,10 @@ import com.rusty.aurora.api.SetVolumeRoute
 import com.rusty.aurora.api.SetDefaultAlarmSoundRoute
 import com.rusty.aurora.api.SetWakeAlarmRoute
 import com.rusty.aurora.api.SnoozeWakeAlarmRoute
+import com.rusty.aurora.api.SetDndRoute
 import com.rusty.aurora.api.SoundLibraryRoute
 import com.rusty.aurora.api.SoundStreamRoute
 import com.rusty.aurora.api.StopSoundRoute
-import com.rusty.aurora.api.WallpaperImageRoute
 import com.rusty.aurora.battery.BatteryRepository
 import com.rusty.aurora.battery.BatteryRepositoryImpl
 import com.rusty.aurora.calendar.CalendarRepository
@@ -35,12 +35,12 @@ import com.rusty.aurora.network.HomeNetworkMonitor
 import com.rusty.aurora.network.HomeNetworkMonitorImpl
 import com.rusty.aurora.network.HomeNetworkRepository
 import com.rusty.aurora.network.HomeNetworkRepositoryImpl
+import com.rusty.aurora.notifications.DndRepository
+import com.rusty.aurora.notifications.DndRepositoryImpl
 import com.rusty.aurora.notifications.NotificationCountRepository
 import com.rusty.aurora.notifications.NotificationCountRepositoryImpl
 import com.rusty.aurora.photo.PhotoRepository
 import com.rusty.aurora.photo.PhotoRepositoryImpl
-import com.rusty.aurora.photo.WallpaperRepository
-import com.rusty.aurora.photo.WallpaperRepositoryImpl
 import com.rusty.aurora.profile.UserProfileRepository
 import com.rusty.aurora.profile.UserProfileRepositoryImpl
 import com.rusty.aurora.service.AuroraServerController
@@ -96,15 +96,14 @@ class AppContainer(context: Context) {
 
     val userProfileRepository: UserProfileRepository = UserProfileRepositoryImpl(context)
 
-    // Ambient Mode's photo background - see PhotoRepository's doc comment.
-    // Aurora never renders anything itself; it just persists which photos
-    // were picked and serves their bytes (PhotoStreamRoute).
+    // The Echo Show's dashboard wallpaper and Ambient Mode's photo
+    // background both cycle through this same picked-photo set now - see
+    // PhotoRepository's doc comment. Aurora never renders anything itself;
+    // it just persists which photos were picked and serves their bytes
+    // (PhotoStreamRoute).
     val photoRepository: PhotoRepository = PhotoRepositoryImpl(context)
 
-    // The main dashboard's wallpaper - a single image, separate from
-    // Ambient Mode's rotating photo set. The Echo Show extracts its own
-    // accent color from this client-side; Aurora just serves the bytes.
-    val wallpaperRepository: WallpaperRepository = WallpaperRepositoryImpl(context)
+    val dndRepository: DndRepository = DndRepositoryImpl(context)
 
     val homeNetworkRepository: HomeNetworkRepository = HomeNetworkRepositoryImpl(context)
 
@@ -121,7 +120,8 @@ class AppContainer(context: Context) {
             soundRepository = soundRepository,
             wakeAlarmRepository = wakeAlarmRepository,
             layoutRepository = layoutRepository,
-            userProfileRepository = userProfileRepository
+            userProfileRepository = userProfileRepository,
+            dndRepository = dndRepository
         ),
         PlaySoundRoute(soundRepository),
         PauseSoundRoute(soundRepository),
@@ -139,7 +139,7 @@ class AppContainer(context: Context) {
         ClearNotificationsRoute(notificationCountRepository),
         PhotoLibraryRoute(photoRepository),
         PhotoStreamRoute(photoRepository),
-        WallpaperImageRoute(wallpaperRepository)
+        SetDndRoute(dndRepository)
     )
 
     val serverController = AuroraServerController { port -> AuroraHttpServer(port, routes) }

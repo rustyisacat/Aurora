@@ -41,6 +41,7 @@ data class AuroraUiState(
     val hasCalendarPermission: Boolean = false,
     val hasLocationPermission: Boolean = false,
     val hasPostNotificationsPermission: Boolean = false,
+    val hasDndAccess: Boolean = false,
     val isOnHomeNetwork: Boolean = false,
     val homeSubnetPrefix: String? = null,
     val detectedWifiSubnetPrefix: String? = null,
@@ -68,7 +69,8 @@ class AuroraViewModel(
     private val homeNetworkMonitor: HomeNetworkMonitor,
     private val homeNetworkRepository: HomeNetworkRepository,
     private val hasNotificationAccess: () -> Boolean,
-    private val hasPostNotificationsPermission: () -> Boolean
+    private val hasPostNotificationsPermission: () -> Boolean,
+    private val hasDndAccess: () -> Boolean
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(
@@ -103,7 +105,8 @@ class AuroraViewModel(
                 hasNotificationAccess = hasNotificationAccess(),
                 hasCalendarPermission = calendarRepository.hasCalendarPermission(),
                 hasLocationPermission = locationRepository.hasLocationPermission(),
-                hasPostNotificationsPermission = hasPostNotificationsPermission()
+                hasPostNotificationsPermission = hasPostNotificationsPermission(),
+                hasDndAccess = hasDndAccess()
             )
         }
     }
@@ -205,6 +208,7 @@ class AuroraViewModel(
                         hasCalendarPermission = calendarRepository.hasCalendarPermission(),
                         hasLocationPermission = locationRepository.hasLocationPermission(),
                         hasPostNotificationsPermission = hasPostNotificationsPermission(),
+                        hasDndAccess = hasDndAccess(),
                         localIpAddress = NetworkUtil.getLocalIpAddress(),
                         detectedWifiSubnetPrefix = homeNetworkMonitor.currentWifiSubnetPrefix(),
                         calendarEvents = calendarRepository.getEvents(),
@@ -231,7 +235,8 @@ class AuroraViewModel(
         private val homeNetworkMonitor: HomeNetworkMonitor,
         private val homeNetworkRepository: HomeNetworkRepository,
         private val hasNotificationAccess: () -> Boolean,
-        private val hasPostNotificationsPermission: () -> Boolean
+        private val hasPostNotificationsPermission: () -> Boolean,
+        private val hasDndAccess: () -> Boolean
     ) : ViewModelProvider.Factory {
         override fun <T : ViewModel> create(modelClass: Class<T>): T {
             @Suppress("UNCHECKED_CAST")
@@ -248,7 +253,8 @@ class AuroraViewModel(
                 homeNetworkMonitor,
                 homeNetworkRepository,
                 hasNotificationAccess,
-                hasPostNotificationsPermission
+                hasPostNotificationsPermission,
+                hasDndAccess
             ) as T
         }
     }

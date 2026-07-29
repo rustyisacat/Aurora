@@ -52,5 +52,9 @@ data class DashboardResponse(
     val wakeAlarmRinging: WakeAlarmRingingState,
     val defaultAlarmSoundId: String? = null,
     val layout: List<TileConfig> = DEFAULT_TILE_LAYOUT,
-    val userName: String? = null
+    val userName: String? = null,
+    // Reflects the phone's actual system-wide interruption filter, not
+    // just "did Aurora turn it on" - true if DND is on for any reason,
+    // including the user flipping it manually. See DndRepository.
+    val dndEnabled: Boolean = false
 )

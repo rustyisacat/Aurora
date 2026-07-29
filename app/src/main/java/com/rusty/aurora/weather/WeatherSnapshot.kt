@@ -17,5 +17,10 @@ data class WeatherSnapshot(
     // null only if Open-Meteo's response omitted them, which shouldn't
     // happen in practice since the request always asks for both.
     val sunrise: String? = null,
-    val sunset: String? = null
+    val sunset: String? = null,
+    // "HH:mm" 24-hour - the first hour today (now or later) whose rain
+    // probability clears OpenMeteoResponseParser's threshold. Null means
+    // no rain expected today, not "unknown" - the dashboard uses this
+    // directly to decide whether to show an umbrella heads-up.
+    val rainExpectedAt: String? = null
 )

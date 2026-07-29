@@ -23,6 +23,7 @@ import androidx.core.content.getSystemService
 import com.rusty.aurora.AuroraApplication
 import com.rusty.aurora.service.AuroraBackgroundService
 import com.rusty.aurora.ui.theme.AuroraTheme
+import com.rusty.aurora.util.DndAccessUtil
 import com.rusty.aurora.util.NotificationAccessUtil
 
 /**
@@ -62,7 +63,8 @@ class MainActivity : ComponentActivity() {
             homeNetworkMonitor = container.homeNetworkMonitor,
             homeNetworkRepository = container.homeNetworkRepository,
             hasNotificationAccess = { NotificationAccessUtil.isNotificationAccessGranted(this) },
-            hasPostNotificationsPermission = { NotificationManagerCompat.from(this).areNotificationsEnabled() }
+            hasPostNotificationsPermission = { NotificationManagerCompat.from(this).areNotificationsEnabled() },
+            hasDndAccess = { DndAccessUtil.isDndAccessGranted(this) }
         )
     }
 
@@ -97,11 +99,6 @@ class MainActivity : ComponentActivity() {
     private val photoPickerLauncher =
         registerForActivityResult(ActivityResultContracts.PickMultipleVisualMedia(PHOTO_PICKER_MAX_ITEMS)) { uris ->
             if (uris.isNotEmpty()) importPhotos(uris)
-        }
-
-    private val wallpaperPickerLauncher =
-        registerForActivityResult(ActivityResultContracts.PickVisualMedia()) { uri ->
-            if (uri != null) importWallpaper(uri)
         }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -160,7 +157,7 @@ class MainActivity : ComponentActivity() {
                             onRequestPostNotificationsPermission = ::requestPostNotificationsPermission,
                             onImportCustomSound = ::launchCustomSoundPicker,
                             onChoosePhotos = ::launchPhotoPicker,
-                            onChooseWallpaper = ::launchWallpaperPicker,
+                            onRequestDndAccess = ::openDndAccessSettings,
                             onCustomizeDashboard = { showCustomizeScreen = true },
                             onChangeName = { forceNameEntry = true },
                             onChangeHomeNetwork = { forceHomeNetworkEntry = true }
@@ -186,6 +183,10 @@ class MainActivity : ComponentActivity() {
 
     private fun openNotificationAccessSettings() {
         startActivity(NotificationAccessUtil.buildNotificationAccessSettingsIntent())
+    }
+
+    private fun openDndAccessSettings() {
+        startActivity(DndAccessUtil.buildDndAccessSettingsIntent())
     }
 
     private fun requestCalendarPermission() {
@@ -232,17 +233,6 @@ class MainActivity : ComponentActivity() {
             contentResolver.takePersistableUriPermission(uri, Intent.FLAG_GRANT_READ_URI_PERMISSION)
         }
         (application as AuroraApplication).container.photoRepository.setPhotos(uris)
-    }
-
-    private fun launchWallpaperPicker() {
-        wallpaperPickerLauncher.launch(
-            PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)
-        )
-    }
-
-    private fun importWallpaper(uri: Uri) {
-        contentResolver.takePersistableUriPermission(uri, Intent.FLAG_GRANT_READ_URI_PERMISSION)
-        (application as AuroraApplication).container.wallpaperRepository.setWallpaper(uri)
     }
 
     private companion object {

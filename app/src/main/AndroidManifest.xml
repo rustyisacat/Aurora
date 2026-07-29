@@ -33,6 +33,12 @@
          WakeAlarmBootReceiver re-arms every enabled wake alarm on restart. -->
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
 
+    <!-- "Notification policy access" - not a runtime dialog, granted via a
+         Settings deep link (same shape as notification listener access
+         above). Needed for the dashboard's Do Not Disturb toggle to
+         actually change the phone's interruption filter. -->
+    <uses-permission android:name="android.permission.ACCESS_NOTIFICATION_POLICY" />
+
     <application
         android:name=".AuroraApplication"
         android:allowBackup="true"

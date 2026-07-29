@@ -80,4 +80,68 @@ class OpenMeteoResponseParserTest {
     fun `malformed json throws rather than silently returning bad data`() {
         OpenMeteoResponseParser.parse("not json")
     }
+
+    @Test
+    fun `rainExpectedAt is null when the response has no hourly block`() {
+        val json = """
+            {
+              "timezone": "America/New_York",
+              "current": { "temperature_2m": 74.3, "weather_code": 0 },
+              "daily": { "temperature_2m_max": [86.1], "temperature_2m_min": [68.4] }
+            }
+        """.trimIndent()
+
+        assertEquals(null, OpenMeteoResponseParser.parse(json).rainExpectedAt)
+    }
+
+    @Test
+    fun `rainExpectedAt finds the first upcoming hour clearing the probability threshold`() {
+        val json = """
+            {
+              "timezone": "America/New_York",
+              "current": { "time": "2026-07-29T12:00", "temperature_2m": 74.3, "weather_code": 0 },
+              "daily": { "temperature_2m_max": [86.1], "temperature_2m_min": [68.4] },
+              "hourly": {
+                "time": ["2026-07-29T11:00", "2026-07-29T12:00", "2026-07-29T13:00", "2026-07-29T14:00"],
+                "precipitation_probability": [80, 20, 30, 60]
+              }
+            }
+        """.trimIndent()
+
+        assertEquals("14:00", OpenMeteoResponseParser.parse(json).rainExpectedAt)
+    }
+
+    @Test
+    fun `rainExpectedAt ignores hours before now even if they cleared the threshold`() {
+        val json = """
+            {
+              "timezone": "America/New_York",
+              "current": { "time": "2026-07-29T12:00", "temperature_2m": 74.3, "weather_code": 0 },
+              "daily": { "temperature_2m_max": [86.1], "temperature_2m_min": [68.4] },
+              "hourly": {
+                "time": ["2026-07-29T11:00", "2026-07-29T12:00"],
+                "precipitation_probability": [90, 10]
+              }
+            }
+        """.trimIndent()
+
+        assertEquals(null, OpenMeteoResponseParser.parse(json).rainExpectedAt)
+    }
+
+    @Test
+    fun `rainExpectedAt is null when no upcoming hour clears the threshold`() {
+        val json = """
+            {
+              "timezone": "America/New_York",
+              "current": { "time": "2026-07-29T12:00", "temperature_2m": 74.3, "weather_code": 0 },
+              "daily": { "temperature_2m_max": [86.1], "temperature_2m_min": [68.4] },
+              "hourly": {
+                "time": ["2026-07-29T12:00", "2026-07-29T13:00"],
+                "precipitation_probability": [20, 30]
+              }
+            }
+        """.trimIndent()
+
+        assertEquals(null, OpenMeteoResponseParser.parse(json).rainExpectedAt)
+    }
 }

@@ -11,10 +11,19 @@ internal data class OpenMeteoResponse(
     // Present because the request includes "&timezone=auto" - an IANA name
     // (e.g. "America/New_York") resolved from the request's lat/long, which
     // is what lets the dashboard's clock follow wherever the phone actually is.
-    val timezone: String
+    val timezone: String,
+    // Defaults to empty rather than required, same reasoning as
+    // DailyBlock's sunrise/sunset below - degrades to "no rain forecast
+    // available" rather than failing the whole parse if it's ever missing.
+    val hourly: HourlyBlock = HourlyBlock()
 ) {
     @Serializable
     data class CurrentBlock(
+        // Open-Meteo always includes this regardless of what's in &current=
+        // - needed to know which hourly.time entries are still ahead of us
+        // today, not already past. Defaults to empty (never true-empty in a
+        // real response) so old-shaped test fixtures without it still parse.
+        val time: String = "",
         @SerialName("temperature_2m") val temperature: Double,
         @SerialName("weather_code") val weatherCode: Int
     )
@@ -28,5 +37,13 @@ internal data class OpenMeteoResponse(
         // thanks to &timezone=auto, so no conversion is needed here.
         val sunrise: List<String> = emptyList(),
         val sunset: List<String> = emptyList()
+    )
+
+    @Serializable
+    data class HourlyBlock(
+        // ISO 8601 local datetimes, one per hour of forecast_days - same
+        // "already in the right timezone" note as DailyBlock's sunrise/sunset.
+        val time: List<String> = emptyList(),
+        @SerialName("precipitation_probability") val precipitationProbability: List<Int> = emptyList()
     )
 }

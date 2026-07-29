@@ -19,6 +19,7 @@ internal class OpenMeteoClient(
                 "?latitude=$latitude&longitude=$longitude" +
                 "&current=temperature_2m,weather_code" +
                 "&daily=temperature_2m_max,temperature_2m_min,sunrise,sunset" +
+                "&hourly=precipitation_probability" +
                 "&temperature_unit=fahrenheit" +
                 "&timezone=auto" +
                 "&forecast_days=1"
