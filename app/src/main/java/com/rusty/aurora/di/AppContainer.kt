@@ -11,6 +11,8 @@ import com.rusty.aurora.api.DismissWakeAlarmRoute
 import com.rusty.aurora.api.GetWakeAlarmsRoute
 import com.rusty.aurora.api.HealthRoute
 import com.rusty.aurora.api.PauseSoundRoute
+import com.rusty.aurora.api.PhotoLibraryRoute
+import com.rusty.aurora.api.PhotoStreamRoute
 import com.rusty.aurora.api.PlaySoundRoute
 import com.rusty.aurora.api.SetSleepTimerRoute
 import com.rusty.aurora.api.SetVolumeRoute
@@ -34,6 +36,8 @@ import com.rusty.aurora.network.HomeNetworkRepository
 import com.rusty.aurora.network.HomeNetworkRepositoryImpl
 import com.rusty.aurora.notifications.NotificationCountRepository
 import com.rusty.aurora.notifications.NotificationCountRepositoryImpl
+import com.rusty.aurora.photo.PhotoRepository
+import com.rusty.aurora.photo.PhotoRepositoryImpl
 import com.rusty.aurora.profile.UserProfileRepository
 import com.rusty.aurora.profile.UserProfileRepositoryImpl
 import com.rusty.aurora.service.AuroraServerController
@@ -89,6 +93,11 @@ class AppContainer(context: Context) {
 
     val userProfileRepository: UserProfileRepository = UserProfileRepositoryImpl(context)
 
+    // Ambient Mode's photo background - see PhotoRepository's doc comment.
+    // Aurora never renders anything itself; it just persists which photos
+    // were picked and serves their bytes (PhotoStreamRoute).
+    val photoRepository: PhotoRepository = PhotoRepositoryImpl(context)
+
     val homeNetworkRepository: HomeNetworkRepository = HomeNetworkRepositoryImpl(context)
 
     val homeNetworkMonitor: HomeNetworkMonitor = HomeNetworkMonitorImpl(context, homeNetworkRepository)
@@ -119,7 +128,9 @@ class AppContainer(context: Context) {
         DismissWakeAlarmRoute(wakeAlarmRepository),
         SnoozeWakeAlarmRoute(wakeAlarmRepository),
         SetDefaultAlarmSoundRoute(wakeAlarmRepository),
-        ClearNotificationsRoute(notificationCountRepository)
+        ClearNotificationsRoute(notificationCountRepository),
+        PhotoLibraryRoute(photoRepository),
+        PhotoStreamRoute(photoRepository)
     )
 
     val serverController = AuroraServerController { port -> AuroraHttpServer(port, routes) }

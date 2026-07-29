@@ -32,6 +32,7 @@ import androidx.compose.material.icons.outlined.Edit
 import androidx.compose.material.icons.outlined.Grain
 import androidx.compose.material.icons.outlined.LibraryMusic
 import androidx.compose.material.icons.outlined.Notifications
+import androidx.compose.material.icons.outlined.PhotoLibrary
 import androidx.compose.material.icons.outlined.WbSunny
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -70,6 +71,7 @@ fun AuroraScreen(
     onRequestLocationAccess: () -> Unit,
     onRequestPostNotificationsPermission: () -> Unit,
     onImportCustomSound: () -> Unit,
+    onChoosePhotos: () -> Unit,
     onCustomizeDashboard: () -> Unit,
     onChangeName: () -> Unit,
     onChangeHomeNetwork: () -> Unit,
@@ -147,6 +149,23 @@ fun AuroraScreen(
                 Icon(Icons.Outlined.LibraryMusic, contentDescription = null, modifier = Modifier.size(18.dp))
                 Spacer(Modifier.width(8.dp))
                 Text("Import Custom Sound")
+            }
+
+            // Ambient Mode's photo background needs the on-device Photo
+            // Picker, which only this screen can launch - same reasoning as
+            // the custom sound import above. No storage permission needed:
+            // the modern Photo Picker grants read access to just the images
+            // actually selected. Replaces the whole rotation each time it's
+            // run, rather than adding to it - the picker itself has no way
+            // to show which photos are already chosen to add alongside.
+            OutlinedButton(
+                onClick = onChoosePhotos,
+                shape = RoundedCornerShape(14.dp),
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Icon(Icons.Outlined.PhotoLibrary, contentDescription = null, modifier = Modifier.size(18.dp))
+                Spacer(Modifier.width(8.dp))
+                Text("Choose Ambient Photos")
             }
 
             Button(

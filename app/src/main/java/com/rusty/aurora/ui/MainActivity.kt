@@ -10,6 +10,7 @@ import android.os.Bundle
 import android.provider.OpenableColumns
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
 import androidx.compose.runtime.collectAsState
@@ -93,6 +94,11 @@ class MainActivity : ComponentActivity() {
             if (uri != null) importCustomSound(uri)
         }
 
+    private val photoPickerLauncher =
+        registerForActivityResult(ActivityResultContracts.PickMultipleVisualMedia(PHOTO_PICKER_MAX_ITEMS)) { uris ->
+            if (uris.isNotEmpty()) importPhotos(uris)
+        }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         AuroraBackgroundService.start(this)
@@ -148,6 +154,7 @@ class MainActivity : ComponentActivity() {
                             onRequestLocationAccess = ::requestLocationPermission,
                             onRequestPostNotificationsPermission = ::requestPostNotificationsPermission,
                             onImportCustomSound = ::launchCustomSoundPicker,
+                            onChoosePhotos = ::launchPhotoPicker,
                             onCustomizeDashboard = { showCustomizeScreen = true },
                             onChangeName = { forceNameEntry = true },
                             onChangeHomeNetwork = { forceHomeNetworkEntry = true }
@@ -207,4 +214,24 @@ class MainActivity : ComponentActivity() {
         contentResolver.query(uri, arrayOf(OpenableColumns.DISPLAY_NAME), null, null, null)?.use { cursor ->
             if (cursor.moveToFirst()) cursor.getString(0) else null
         }
+
+    private fun launchPhotoPicker() {
+        photoPickerLauncher.launch(
+            PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)
+        )
+    }
+
+    private fun importPhotos(uris: List<Uri>) {
+        uris.forEach { uri ->
+            contentResolver.takePersistableUriPermission(uri, Intent.FLAG_GRANT_READ_URI_PERMISSION)
+        }
+        (application as AuroraApplication).container.photoRepository.setPhotos(uris)
+    }
+
+    private companion object {
+        // The Photo Picker's own hard cap is higher, but Ambient Mode is a
+        // slow background rotation, not a gallery - a few dozen is already
+        // more than a slideshow needs.
+        const val PHOTO_PICKER_MAX_ITEMS = 30
+    }
 }
