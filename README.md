@@ -32,15 +32,17 @@ Themes, a one-tap Bedside Mode, an idle-triggered Ambient Mode, and
 wallpaper-matched color theming). What Aurora itself gained is the photo
 backend those last two features needed:
 
-- **Choose Ambient Photos**: pick a handful of photos from your gallery via
+- **Choose Photos**: pick a handful of photos from your gallery via
   Android's Photo Picker — no storage permission needed, since the picker
   itself only grants access to what you actually select. Persisted across
-  restarts and served to the dashboard for Ambient Mode's slow-crossfade
-  photo rotation.
-- **Choose Wallpaper**: the same Photo Picker approach for a single image,
-  shown behind the main dashboard. The dashboard extracts its own accent
-  color from whatever you pick client-side — Aurora just serves the bytes,
-  same "dumb backend" role it already plays for the sound machine.
+  restarts and served to the dashboard, which cycles them for both Ambient
+  Mode's screensaver and the main dashboard's own rotating wallpaper.
+- **Rain forecast**: weather now includes the next upcoming hour with a
+  high chance of rain, if any, so the dashboard can nudge you to bring an
+  umbrella before you head out.
+- **Do Not Disturb**: toggle the phone's real system DND from the
+  dashboard — Aurora only acts on it if you've already granted
+  notification policy access on the phone.
 
 ## What's new in v2.0
 
@@ -88,10 +90,14 @@ backend those last two features needed:
   the phone is on the configured home Wi-Fi network.
 - **Dashboard customization**: reorder, hide, or resize the dashboard's
   cards, right from the phone app — no code changes needed.
-- **Ambient Mode photos & dashboard wallpaper**: pick photos via Android's
-  Photo Picker (no storage permission needed) for the dashboard's idle
-  screensaver and its main-screen wallpaper — served over HTTP the same
-  way custom sounds are, Aurora never renders anything itself.
+- **Ambient Mode photos & rotating dashboard wallpaper**: pick photos via
+  Android's Photo Picker (no storage permission needed); the dashboard
+  cycles the same library for both its idle screensaver and its
+  main-screen wallpaper — served over HTTP the same way custom sounds are,
+  Aurora never renders anything itself.
+- **Rain forecast & Do Not Disturb**: weather includes a next-rain-hour
+  nudge for the dashboard's "bring an umbrella" warning, and the dashboard
+  can flip the phone's real system DND on and off.
 - **Zero cloud dependency**: everything is plain HTTP on your LAN.
 
 ## How it fits together
@@ -174,6 +180,9 @@ the phone in the first place, since the Echo Show is what actually rings.
    - **Notifications** (POST_NOTIFICATIONS, Android 13+) — needed to show
      the background service's persistent status icon; the server still
      runs without it, you just won't see the icon.
+   - **Do Not Disturb access** (Settings deep link from the app) — needed
+     for the dashboard's DND toggle to actually change the phone's system
+     DND state; without it the toggle silently no-ops.
 
    All of these are optional — declining any of them degrades that one
    feature gracefully instead of crashing the app.
@@ -205,11 +214,12 @@ a permanent location than grant location access.
   "nextAlarm": { "time": "07:00", "enabled": true },
   "calendar": [{ "title": "School", "start": "08:00", "end": "15:00", "allDay": false }],
   "calendarShowsTomorrow": false,
-  "weather": { "temperature": 74, "condition": "Clear", "high": 86, "low": 68, "timezone": "America/New_York", "sunrise": "06:15", "sunset": "20:42" },
+  "weather": { "temperature": 74, "condition": "Clear", "high": 86, "low": 68, "timezone": "America/New_York", "sunrise": "06:15", "sunset": "20:42", "rainExpectedAt": null },
   "soundMachine": { "playing": false, "sound": null, "volume": 50, "sleepTimerMinutes": null },
   "wakeAlarms": [{ "id": "…", "hour": 6, "minute": 30, "daysOfWeek": [2, 3, 4, 5, 6], "enabled": true, "label": "", "soundId": "rain" }],
   "wakeAlarmRinging": { "ringing": false, "alarmId": null, "label": "", "soundId": null },
-  "layout": [{ "id": "weather", "visible": true, "size": "medium" }]
+  "layout": [{ "id": "weather", "visible": true, "size": "medium" }],
+  "dndEnabled": false
 }
 ```
 
@@ -223,8 +233,8 @@ Sound Machine control routes (`POST /sound/play`, `/sound/pause`,
 `/sound/stop`, `/sound/volume`, `/sound/timer`, `GET /sound/library`,
 `GET /sound/stream`), Wake Alarm control routes (`GET /wakealarms`,
 `POST /wakealarms/set`, `/wakealarms/delete`, `/wakealarms/dismiss`,
-`/wakealarms/snooze`), and the photo routes (`GET /photos/library`,
-`GET /photos/stream`, `GET /wallpaper/image`) exist for the dashboard's own
+`/wakealarms/snooze`), the photo routes (`GET /photos/library`,
+`GET /photos/stream`), and `POST /dnd/set` exist for the dashboard's own
 use — see [echo-dashboard](https://github.com/rustyisacat/echo-dashboard).
 
 ## Architecture
@@ -238,17 +248,17 @@ com.rusty.aurora
 ├── layout/         Dashboard tile order/visibility/size, persisted + served
 ├── location/       LocationRepository - best-effort last-known location for weather
 ├── network/        HomeNetworkMonitor/Repository - user-configured home Wi-Fi subnet detection
-├── notifications/  NotificationCountRepository + the NotificationListenerService
-├── photo/          Ambient Mode's photo rotation + the dashboard wallpaper, both Photo Picker-backed
+├── notifications/  NotificationCountRepository + the NotificationListenerService + DndRepository
+├── photo/          Photo Picker-backed library, shared by Ambient Mode and the dashboard's rotating wallpaper
 ├── profile/        UserProfileRepository - the first-launch name prompt
 ├── service/        AuroraBackgroundService (persistent server) + AuroraServerController
 ├── sound/          Sound Machine state, library, sleep timer (Aurora never plays audio itself)
 ├── wakealarm/      Aurora's own alarm clock - scheduling, ringing state, HTTP routes
-├── weather/        WeatherRepository - cached Open-Meteo client, location-aware
+├── weather/        WeatherRepository - cached Open-Meteo client, location-aware, includes rain forecast
 ├── di/             Hand-rolled composition root (AppContainer)
 ├── model/          Serializable response DTOs, shared enums
 ├── ui/             Compose screens, ViewModel, MainActivity, theme
-└── util/           NetworkUtil (LAN IP, Wi-Fi-specific IP), NotificationAccessUtil
+└── util/           NetworkUtil (LAN IP, Wi-Fi-specific IP), NotificationAccessUtil, DndAccessUtil
 ```
 
 **Design principles this codebase follows throughout:**
