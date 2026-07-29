@@ -16,4 +16,15 @@ class NotificationCountRepositoryImpl : NotificationCountRepository {
         _notificationGroups.value = groups
         _notificationCount.value = groups.sumOf { it.count }
     }
+
+    @Volatile
+    private var clearAllAction: (() -> Unit)? = null
+
+    override fun setClearAllAction(action: (() -> Unit)?) {
+        clearAllAction = action
+    }
+
+    override fun clearAll() {
+        clearAllAction?.invoke()
+    }
 }

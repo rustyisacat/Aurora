@@ -15,4 +15,17 @@ interface NotificationCountRepository {
     val notificationCount: StateFlow<Int>
     val notificationGroups: StateFlow<List<NotificationGroup>>
     fun update(groups: List<NotificationGroup>)
+
+    /**
+     * Registers the action that actually dismisses notifications - only
+     * a live, connected NotificationListenerService instance can call
+     * cancelAllNotifications(), so AuroraNotificationListenerService
+     * registers itself here on connect and clears it on disconnect. Null
+     * means "not currently connected."
+     */
+    fun setClearAllAction(action: (() -> Unit)?)
+
+    /** Requests that every notification be dismissed on the phone - a
+     *  no-op if the listener isn't currently connected. */
+    fun clearAll()
 }

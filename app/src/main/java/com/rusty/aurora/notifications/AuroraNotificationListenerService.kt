@@ -22,7 +22,13 @@ class AuroraNotificationListenerService : NotificationListenerService() {
 
     override fun onListenerConnected() {
         super.onListenerConnected()
+        repository.setClearAllAction(::cancelAllNotifications)
         updateGroups()
+    }
+
+    override fun onListenerDisconnected() {
+        super.onListenerDisconnected()
+        repository.setClearAllAction(null)
     }
 
     override fun onNotificationPosted(sbn: StatusBarNotification) {

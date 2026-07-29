@@ -4,6 +4,7 @@ import android.content.Context
 import com.rusty.aurora.alarm.AlarmRepository
 import com.rusty.aurora.alarm.AlarmRepositoryImpl
 import com.rusty.aurora.api.AuroraHttpServer
+import com.rusty.aurora.api.ClearNotificationsRoute
 import com.rusty.aurora.api.DashboardRoute
 import com.rusty.aurora.api.DeleteWakeAlarmRoute
 import com.rusty.aurora.api.DismissWakeAlarmRoute
@@ -117,7 +118,8 @@ class AppContainer(context: Context) {
         DeleteWakeAlarmRoute(wakeAlarmRepository),
         DismissWakeAlarmRoute(wakeAlarmRepository),
         SnoozeWakeAlarmRoute(wakeAlarmRepository),
-        SetDefaultAlarmSoundRoute(wakeAlarmRepository)
+        SetDefaultAlarmSoundRoute(wakeAlarmRepository),
+        ClearNotificationsRoute(notificationCountRepository)
     )
 
     val serverController = AuroraServerController { port -> AuroraHttpServer(port, routes) }
