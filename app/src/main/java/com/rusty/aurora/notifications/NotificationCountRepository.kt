@@ -28,4 +28,15 @@ interface NotificationCountRepository {
     /** Requests that every notification be dismissed on the phone - a
      *  no-op if the listener isn't currently connected. */
     fun clearAll()
+
+    /**
+     * Same registration pattern as [setClearAllAction]: only the listener
+     * service can recompute groups from activeNotifications. Toggling the
+     * blocklist in the UI calls [refresh] so the change is reflected on the
+     * very next /dashboard poll, rather than waiting for the next
+     * onNotificationPosted/Removed callback to happen to fire.
+     */
+    fun setRefreshAction(action: (() -> Unit)?)
+
+    fun refresh()
 }

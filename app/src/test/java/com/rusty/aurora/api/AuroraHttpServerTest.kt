@@ -45,7 +45,8 @@ class AuroraHttpServerTest {
             """{"id":"notifications","visible":true,"size":"large"},""" +
             """{"id":"schedule","visible":true,"size":"medium"},""" +
             """{"id":"alarm","visible":true,"size":"small"},""" +
-            """{"id":"sound","visible":true,"size":"large"}],"userName":null,"dndEnabled":false}"""
+            """{"id":"sound","visible":true,"size":"large"}],"userName":null,"dndEnabled":false,""" +
+            """"chargingEtaMinutes":null}"""
 
     private class FakeBatteryRepository(
         private val level: Int,
@@ -53,6 +54,7 @@ class AuroraHttpServerTest {
     ) : BatteryRepository {
         override fun getBatteryLevelPercent(): Int = level
         override fun isCharging(): Boolean = charging
+        override fun getChargingEtaMinutes(): Int? = null
     }
 
     private class FakeCalendarRepository(private val events: List<CalendarEvent>) : CalendarRepository {
@@ -260,7 +262,15 @@ class AuroraHttpServerTest {
                 temperature = 74, condition = "Clear", high = 86, low = 68,
                 timezone = "America/New_York", sunrise = "06:15", sunset = "20:42"
             ),
-            notificationGroups = listOf(NotificationGroup(app = "Discord", count = 3))
+            notificationGroups = listOf(
+                NotificationGroup(
+                    app = "Discord",
+                    packageName = "com.discord",
+                    count = 3,
+                    latestTitle = "Alice",
+                    latestText = "hey"
+                )
+            )
         )
         val connection = get("$baseUrl/dashboard")
         val body = connection.inputStream.bufferedReader().readText()
@@ -269,7 +279,8 @@ class AuroraHttpServerTest {
         assertTrue(connection.contentType.startsWith("application/json"))
         assertEquals(
             """{"battery":77,"charging":true,"notifications":3,""" +
-                """"notificationGroups":[{"app":"Discord","count":3}],""" +
+                """"notificationGroups":[{"app":"Discord","packageName":"com.discord","count":3,""" +
+                """"latestTitle":"Alice","latestText":"hey"}],""" +
                 """"nextAlarm":{"time":"07:00","enabled":true},""" +
                 """"calendar":[{"title":"School","start":"08:00","end":"15:00","allDay":false}],""" +
                 """"calendarShowsTomorrow":false,""" +

@@ -42,6 +42,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Surface
+import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -73,6 +74,7 @@ fun AuroraScreen(
     onImportCustomSound: () -> Unit,
     onChoosePhotos: () -> Unit,
     onRequestDndAccess: () -> Unit,
+    onToggleAppBlocked: (String, Boolean) -> Unit,
     onCustomizeDashboard: () -> Unit,
     onChangeName: () -> Unit,
     onChangeHomeNetwork: () -> Unit,
@@ -91,6 +93,9 @@ fun AuroraScreen(
             ServerStatusCard(uiState)
             BatteryCard(uiState)
             NotificationsCard(uiState)
+            if (uiState.knownNotificationApps.isNotEmpty()) {
+                NotificationAppsCard(uiState, onToggleAppBlocked)
+            }
             WeatherCard(uiState)
             TodayEventsCard(uiState)
             NextAlarmCard(uiState)
@@ -330,6 +335,29 @@ private fun BatteryCard(uiState: AuroraUiState) {
 private fun NotificationsCard(uiState: AuroraUiState) {
     AuroraCard(title = "Notifications", icon = Icons.Outlined.Notifications) {
         HeroValue(uiState.notificationCount.toString())
+    }
+}
+
+/** Every app that's ever posted a notification, each with a switch for
+ *  whether the dashboard gets to see it - stays listed even once blocked
+ *  (or once its notifications are all cleared), see
+ *  NotificationBlocklistRepository.knownApps. */
+@Composable
+private fun NotificationAppsCard(uiState: AuroraUiState, onToggleBlocked: (String, Boolean) -> Unit) {
+    AuroraCard(title = "Notification Apps", icon = Icons.Outlined.Notifications) {
+        uiState.knownNotificationApps.forEach { app ->
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(app.label, style = MaterialTheme.typography.bodyMedium)
+                Switch(
+                    checked = !app.blocked,
+                    onCheckedChange = { shown -> onToggleBlocked(app.packageName, !shown) }
+                )
+            }
+        }
     }
 }
 

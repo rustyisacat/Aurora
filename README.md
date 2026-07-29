@@ -70,9 +70,18 @@ backend those last two features needed:
 
 ## Features
 
-- **Live phone status**: battery level/charging state, notification count
-  (grouped by app), calendar events (today or tomorrow, see above), next
-  alarm — all pulled and served as one JSON snapshot.
+- **Live phone status**: battery level/charging state (plus a charging-rate
+  estimate for "minutes until full", see below), notification count
+  (grouped by app, each with an app icon and a preview of its latest
+  notification - see below), calendar events (today or tomorrow, see
+  above), next alarm — all pulled and served as one JSON snapshot.
+- **Notification Apps**: every app that's ever posted a notification gets
+  a switch in the phone app to include or exclude it from the dashboard -
+  block a noisy app once and it stays hidden, without losing its place in
+  the list.
+- **Charging ETA**: estimates minutes until 100% from the phone's own
+  recent charge rate (BatteryManager has no reliable API of its own for
+  this) - shows nothing until there's a few minutes of history to trust.
 - **Weather**: current conditions plus sunrise/sunset via
   [Open-Meteo](https://open-meteo.com/) (no API key needed), resolved from
   the phone's own location, cached and refreshed in the background.
@@ -210,7 +219,7 @@ a permanent location than grant location access.
   "battery": 82,
   "charging": true,
   "notifications": 5,
-  "notificationGroups": [{ "app": "Messages", "count": 3 }],
+  "notificationGroups": [{ "app": "Messages", "packageName": "com.google.android.apps.messaging", "count": 3, "latestTitle": "Alice", "latestText": "running late" }],
   "nextAlarm": { "time": "07:00", "enabled": true },
   "calendar": [{ "title": "School", "start": "08:00", "end": "15:00", "allDay": false }],
   "calendarShowsTomorrow": false,
@@ -219,7 +228,8 @@ a permanent location than grant location access.
   "wakeAlarms": [{ "id": "…", "hour": 6, "minute": 30, "daysOfWeek": [2, 3, 4, 5, 6], "enabled": true, "label": "", "soundId": "rain" }],
   "wakeAlarmRinging": { "ringing": false, "alarmId": null, "label": "", "soundId": null },
   "layout": [{ "id": "weather", "visible": true, "size": "medium" }],
-  "dndEnabled": false
+  "dndEnabled": false,
+  "chargingEtaMinutes": null
 }
 ```
 
@@ -234,8 +244,11 @@ Sound Machine control routes (`POST /sound/play`, `/sound/pause`,
 `GET /sound/stream`), Wake Alarm control routes (`GET /wakealarms`,
 `POST /wakealarms/set`, `/wakealarms/delete`, `/wakealarms/dismiss`,
 `/wakealarms/snooze`), the photo routes (`GET /photos/library`,
-`GET /photos/stream`), and `POST /dnd/set` exist for the dashboard's own
-use — see [echo-dashboard](https://github.com/rustyisacat/echo-dashboard).
+`GET /photos/stream`), `POST /dnd/set`, and `GET /notifications/icon?package=`
+(an app's launcher icon as a PNG) exist for the dashboard's own use — see
+[echo-dashboard](https://github.com/rustyisacat/echo-dashboard). Which
+apps' notifications are excluded is phone-app-only configuration (the
+Notification Apps card), not something the dashboard can change.
 
 ## Architecture
 
@@ -243,12 +256,13 @@ use — see [echo-dashboard](https://github.com/rustyisacat/echo-dashboard).
 com.rusty.aurora
 ├── api/            HTTP layer: NanoHTTPD server + one Route per endpoint
 ├── alarm/          AlarmRepository - the phone's stock alarm, reconciled against wakealarm/'s own
-├── battery/        BatteryRepository - wraps android.os.BatteryManager
+├── battery/        BatteryRepository - wraps android.os.BatteryManager, estimates charging ETA
 ├── calendar/       CalendarRepository - today's events before noon, tomorrow's from noon on
 ├── layout/         Dashboard tile order/visibility/size, persisted + served
 ├── location/       LocationRepository - best-effort last-known location for weather
 ├── network/        HomeNetworkMonitor/Repository - user-configured home Wi-Fi subnet detection
 ├── notifications/  NotificationCountRepository + the NotificationListenerService + DndRepository
+│                   + NotificationBlocklistRepository + AppIconProvider
 ├── photo/          Photo Picker-backed library, shared by Ambient Mode and the dashboard's rotating wallpaper
 ├── profile/        UserProfileRepository - the first-launch name prompt
 ├── service/        AuroraBackgroundService (persistent server) + AuroraServerController
@@ -273,8 +287,8 @@ com.rusty.aurora
 - Pure logic is split out from Android/network glue wherever a repository
   does real transformation (`CalendarEventMapper`, `WeatherCache`,
   `SleepTimerCalculator`, `NotificationGrouper`, `NextTriggerCalculator`,
-  ...) — these have no Android dependency and are covered by plain JVM
-  unit tests.
+  `ChargingEtaCalculator`, ...) — these have no Android dependency and are
+  covered by plain JVM unit tests.
 - `di/AppContainer` is a hand-rolled object graph, not Hilt/Koin — still
   comfortably manageable by hand at this size, and every class still takes
   its dependencies through its constructor.

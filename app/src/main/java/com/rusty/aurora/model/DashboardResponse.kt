@@ -56,5 +56,8 @@ data class DashboardResponse(
     // Reflects the phone's actual system-wide interruption filter, not
     // just "did Aurora turn it on" - true if DND is on for any reason,
     // including the user flipping it manually. See DndRepository.
-    val dndEnabled: Boolean = false
+    val dndEnabled: Boolean = false,
+    // Null while not charging, or until BatteryRepository has enough
+    // charge-rate history for a stable estimate - see ChargingEtaCalculator.
+    val chargingEtaMinutes: Int? = null
 )

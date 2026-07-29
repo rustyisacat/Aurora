@@ -15,6 +15,7 @@ import com.rusty.aurora.location.LocationRepository
 import com.rusty.aurora.model.ServerStatus
 import com.rusty.aurora.network.HomeNetworkMonitor
 import com.rusty.aurora.network.HomeNetworkRepository
+import com.rusty.aurora.notifications.NotificationBlocklistRepository
 import com.rusty.aurora.notifications.NotificationCountRepository
 import com.rusty.aurora.profile.UserProfileRepository
 import com.rusty.aurora.service.AuroraServerController
@@ -26,8 +27,13 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+
+/** One app the phone app's Notification Apps card can show a toggle for -
+ *  [blocked] true means it's excluded from what the dashboard sees. */
+data class KnownAppUiState(val packageName: String, val label: String, val blocked: Boolean)
 
 /** Everything the screen needs to render, in one immutable snapshot. */
 data class AuroraUiState(
@@ -50,7 +56,8 @@ data class AuroraUiState(
     val nextAlarm: NextAlarm? = null,
     val weather: WeatherSnapshot? = null,
     val tileLayout: List<TileConfig> = emptyList(),
-    val userName: String? = null
+    val userName: String? = null,
+    val knownNotificationApps: List<KnownAppUiState> = emptyList()
 ) {
     val dashboardUrl: String?
         get() = localIpAddress?.let { ip -> "http://$ip:$port/dashboard" }
@@ -60,6 +67,7 @@ class AuroraViewModel(
     private val serverController: AuroraServerController,
     private val batteryRepository: BatteryRepository,
     private val notificationCountRepository: NotificationCountRepository,
+    private val notificationBlocklistRepository: NotificationBlocklistRepository,
     private val calendarRepository: CalendarRepository,
     private val alarmRepository: AlarmRepository,
     private val weatherRepository: WeatherRepository,
@@ -85,6 +93,7 @@ class AuroraViewModel(
     init {
         observeServerStatus()
         observeNotificationCount()
+        observeNotificationApps()
         observeHomeNetwork()
         pollDeviceState()
         // Starting/stopping the server itself is AuroraBackgroundService's
@@ -179,6 +188,31 @@ class AuroraViewModel(
         }
     }
 
+    private fun observeNotificationApps() {
+        viewModelScope.launch {
+            combine(
+                notificationBlocklistRepository.knownApps,
+                notificationBlocklistRepository.blockedPackages
+            ) { known, blocked ->
+                known
+                    .map { app -> KnownAppUiState(app.packageName, app.label, blocked = app.packageName in blocked) }
+                    .sortedBy { it.label.lowercase() }
+            }.collect { apps ->
+                _uiState.update { it.copy(knownNotificationApps = apps) }
+            }
+        }
+    }
+
+    /** Toggling this doesn't just persist the preference - it also asks the
+     *  listener service to recompute right away (see
+     *  NotificationCountRepository.refresh), so the change shows up on the
+     *  dashboard's very next poll instead of waiting for that app's next
+     *  notification event. */
+    fun toggleAppBlocked(packageName: String, blocked: Boolean) {
+        notificationBlocklistRepository.setBlocked(packageName, blocked)
+        notificationCountRepository.refresh()
+    }
+
     /** AuroraBackgroundService is the one actually starting/stopping the
      *  server off this same signal - this is purely for the status card. */
     private fun observeHomeNetwork() {
@@ -226,6 +260,7 @@ class AuroraViewModel(
         private val serverController: AuroraServerController,
         private val batteryRepository: BatteryRepository,
         private val notificationCountRepository: NotificationCountRepository,
+        private val notificationBlocklistRepository: NotificationBlocklistRepository,
         private val calendarRepository: CalendarRepository,
         private val alarmRepository: AlarmRepository,
         private val weatherRepository: WeatherRepository,
@@ -244,6 +279,7 @@ class AuroraViewModel(
                 serverController,
                 batteryRepository,
                 notificationCountRepository,
+                notificationBlocklistRepository,
                 calendarRepository,
                 alarmRepository,
                 weatherRepository,

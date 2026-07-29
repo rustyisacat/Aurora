@@ -53,7 +53,8 @@ class DashboardRoute(
             defaultAlarmSoundId = wakeAlarmRepository.getDefaultAlarmSoundId(),
             layout = layoutRepository.getLayout(),
             userName = userProfileRepository.getUserName(),
-            dndEnabled = dndRepository.isEnabled()
+            dndEnabled = dndRepository.isEnabled(),
+            chargingEtaMinutes = batteryRepository.getChargingEtaMinutes()
         )
         return NanoHTTPD.newFixedLengthResponse(
             Status.OK,

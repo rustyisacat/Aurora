@@ -54,6 +54,7 @@ class MainActivity : ComponentActivity() {
             serverController = container.serverController,
             batteryRepository = container.batteryRepository,
             notificationCountRepository = container.notificationCountRepository,
+            notificationBlocklistRepository = container.notificationBlocklistRepository,
             calendarRepository = container.calendarRepository,
             alarmRepository = container.alarmRepository,
             weatherRepository = container.weatherRepository,
@@ -158,6 +159,7 @@ class MainActivity : ComponentActivity() {
                             onImportCustomSound = ::launchCustomSoundPicker,
                             onChoosePhotos = ::launchPhotoPicker,
                             onRequestDndAccess = ::openDndAccessSettings,
+                            onToggleAppBlocked = viewModel::toggleAppBlocked,
                             onCustomizeDashboard = { showCustomizeScreen = true },
                             onChangeName = { forceNameEntry = true },
                             onChangeHomeNetwork = { forceHomeNetworkEntry = true }

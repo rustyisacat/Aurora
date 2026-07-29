@@ -27,4 +27,15 @@ class NotificationCountRepositoryImpl : NotificationCountRepository {
     override fun clearAll() {
         clearAllAction?.invoke()
     }
+
+    @Volatile
+    private var refreshAction: (() -> Unit)? = null
+
+    override fun setRefreshAction(action: (() -> Unit)?) {
+        refreshAction = action
+    }
+
+    override fun refresh() {
+        refreshAction?.invoke()
+    }
 }
