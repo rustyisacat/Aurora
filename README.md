@@ -4,7 +4,7 @@
 ![Kotlin](https://img.shields.io/badge/Kotlin-2.2-7F52FF?logo=kotlin&logoColor=white)
 ![Jetpack Compose](https://img.shields.io/badge/UI-Jetpack%20Compose-4285F4?logo=jetpackcompose&logoColor=white)
 ![Version](https://img.shields.io/badge/version-3.0-blue)
-![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)
+![License: AGPL v3](https://img.shields.io/badge/License-AGPL%20v3-blue.svg)
 
 Aurora turns an Android phone into the backend for a self-hosted bedside
 smart display. It reads live data straight off the phone — battery,
@@ -325,9 +325,9 @@ verification instead, since they hold no real logic of their own.
 ## Roadmap
 
 Ideas not yet built, following the same repository-interface +
-`DashboardResponse`-field pattern established so far: charging time
-estimate, more built-in sound machine tracks, alarm-specific volume
-separate from the ambient sound machine's.
+`DashboardResponse`-field pattern established so far: more built-in sound
+machine tracks, alarm-specific volume separate from the ambient sound
+machine's.
 
 ## AI Disclaimer
 
@@ -339,4 +339,4 @@ and would appreciate the help.
 
 ## License
 
-[MIT](LICENSE)
+[AGPL v3](LICENSE)
