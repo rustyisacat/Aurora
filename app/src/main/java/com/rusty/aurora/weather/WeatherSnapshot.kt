@@ -22,5 +22,11 @@ data class WeatherSnapshot(
     // probability clears OpenMeteoResponseParser's threshold. Null means
     // no rain expected today, not "unknown" - the dashboard uses this
     // directly to decide whether to show an umbrella heads-up.
-    val rainExpectedAt: String? = null
+    val rainExpectedAt: String? = null,
+    // 4-letter NWS radar station id (e.g. "KJAX") covering this snapshot's
+    // coordinate - null if the lookup failed, same "unknown, not absence
+    // of weather" meaning as everything else here. The dashboard uses this
+    // to build a radar.weather.gov image URL directly; Aurora never
+    // fetches or proxies the radar image itself.
+    val radarStation: String? = null
 )

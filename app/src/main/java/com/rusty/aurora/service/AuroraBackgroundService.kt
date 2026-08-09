@@ -59,7 +59,9 @@ class AuroraBackgroundService : Service() {
             container.homeNetworkMonitor.isOnHomeNetwork.collectLatest { onHomeNetwork ->
                 if (onHomeNetwork) {
                     container.serverController.start()
+                    container.nsdAdvertiser.start(container.serverController.port)
                 } else {
+                    container.nsdAdvertiser.stop()
                     container.serverController.stop()
                 }
                 updateNotification(onHomeNetwork)
@@ -76,6 +78,7 @@ class AuroraBackgroundService : Service() {
         scope.cancel()
         val container = (application as AuroraApplication).container
         container.homeNetworkMonitor.stop()
+        container.nsdAdvertiser.stop()
         container.serverController.stop()
         super.onDestroy()
     }

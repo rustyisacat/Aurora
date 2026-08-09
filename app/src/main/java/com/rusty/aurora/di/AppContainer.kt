@@ -32,6 +32,7 @@ import com.rusty.aurora.layout.LayoutRepository
 import com.rusty.aurora.layout.LayoutRepositoryImpl
 import com.rusty.aurora.location.LocationRepository
 import com.rusty.aurora.location.LocationRepositoryImpl
+import com.rusty.aurora.network.AuroraNsdAdvertiser
 import com.rusty.aurora.network.HomeNetworkMonitor
 import com.rusty.aurora.network.HomeNetworkMonitorImpl
 import com.rusty.aurora.network.HomeNetworkRepository
@@ -126,6 +127,8 @@ class AppContainer(context: Context) {
     val homeNetworkRepository: HomeNetworkRepository = HomeNetworkRepositoryImpl(context)
 
     val homeNetworkMonitor: HomeNetworkMonitor = HomeNetworkMonitorImpl(context, homeNetworkRepository)
+
+    val nsdAdvertiser = AuroraNsdAdvertiser(context)
 
     private val routes = listOf(
         HealthRoute(),

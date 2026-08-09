@@ -17,6 +17,14 @@
          back to WeatherConfig's fixed coordinate, same as before this existed. -->
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
 
+    <!-- AuroraNsdAdvertiser: advertises the HTTP server via mDNS/NSD
+         (_aurora._tcp) so the dashboard can find it without a hardcoded IP.
+         CHANGE_WIFI_MULTICAST_STATE backs the MulticastLock it holds while
+         registered - without it, Wi-Fi power-save can silently drop the
+         inbound multicast packets mDNS depends on. -->
+    <uses-permission android:name="android.permission.ACCESS_WIFI_STATE" />
+    <uses-permission android:name="android.permission.CHANGE_WIFI_MULTICAST_STATE" />
+
     <!-- AuroraBackgroundService keeps the HTTP server alive independent of
          MainActivity, and needs to know whether the phone is on the home
          Wi-Fi network (HomeNetworkMonitor) to decide whether to run it. -->

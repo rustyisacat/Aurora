@@ -52,7 +52,9 @@ class WeatherRepositoryImpl(
                     val location = locationRepository.getLastKnownLocation()
                     val latitude = location?.latitude ?: WeatherConfig.LATITUDE
                     val longitude = location?.longitude ?: WeatherConfig.LONGITUDE
-                    cache.store(OpenMeteoClient(latitude, longitude).fetchCurrentWeather())
+                    val snapshot = OpenMeteoClient(latitude, longitude).fetchCurrentWeather()
+                    val radarStation = fetchRadarStation(latitude, longitude)
+                    cache.store(snapshot.copy(radarStation = radarStation))
                 }
                 // Offline: leave the existing cache (possibly still null) untouched.
             } catch (e: IOException) {
@@ -64,6 +66,22 @@ class WeatherRepositoryImpl(
             }
         }
     }
+
+    /** Own try/catch, separate from the outer one: a failed radar station
+     *  lookup shouldn't discard an otherwise-successful weather fetch. Falls
+     *  back to whatever radar station was already cached (it essentially
+     *  never changes for a fixed-ish location) rather than blanking out a
+     *  working radar image over one transient NWS hiccup. */
+    private fun fetchRadarStation(latitude: Double, longitude: Double): String? =
+        try {
+            NwsPointsClient(latitude, longitude).fetchRadarStation()
+        } catch (e: IOException) {
+            Log.w(TAG, "Radar station lookup failed, keeping previous value", e)
+            cache.current?.radarStation
+        } catch (e: SerializationException) {
+            Log.w(TAG, "Radar station response could not be parsed, keeping previous value", e)
+            cache.current?.radarStation
+        }
 
     private companion object {
         const val TAG = "WeatherRepository"
