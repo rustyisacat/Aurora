@@ -24,6 +24,8 @@ import com.rusty.aurora.sound.SoundStream
 import com.rusty.aurora.wakealarm.WakeAlarm
 import com.rusty.aurora.wakealarm.WakeAlarmRepository
 import com.rusty.aurora.wakealarm.WakeAlarmRingingState
+import com.rusty.aurora.weather.WeatherAlert
+import com.rusty.aurora.weather.WeatherAlertRepository
 import com.rusty.aurora.weather.WeatherRepository
 import com.rusty.aurora.weather.WeatherSnapshot
 import org.junit.After
@@ -50,7 +52,7 @@ class AuroraHttpServerTest {
             """{"id":"alarm","visible":true,"size":"small"},""" +
             """{"id":"sound","visible":true,"size":"large"}],"userName":null,"dndEnabled":false,""" +
             """"chargingEtaMinutes":null,"wallpaperMode":"rotating","wallpaperSinglePhotoId":null,""" +
-            """"wallpaperSchedule":[]}"""
+            """"wallpaperSchedule":[],"weatherAlert":null}"""
 
     private class FakeBatteryRepository(
         private val level: Int,
@@ -74,6 +76,10 @@ class AuroraHttpServerTest {
 
     private class FakeWeatherRepository(private val weather: WeatherSnapshot?) : WeatherRepository {
         override fun getWeather(): WeatherSnapshot? = weather
+    }
+
+    private class FakeWeatherAlertRepository(private val alert: WeatherAlert? = null) : WeatherAlertRepository {
+        override fun getAlert(): WeatherAlert? = alert
     }
 
     private class FakeLayoutRepository(private var tiles: List<TileConfig> = DEFAULT_TILE_LAYOUT) : LayoutRepository {
@@ -244,7 +250,8 @@ class AuroraHttpServerTest {
                 layoutRepository = FakeLayoutRepository(),
                 userProfileRepository = FakeUserProfileRepository(),
                 dndRepository = FakeDndRepository(),
-                wallpaperConfigRepository = FakeWallpaperConfigRepository()
+                wallpaperConfigRepository = FakeWallpaperConfigRepository(),
+                weatherAlertRepository = FakeWeatherAlertRepository()
             ),
             PlaySoundRoute(fakeSoundRepository),
             PauseSoundRoute(fakeSoundRepository),

@@ -12,31 +12,23 @@ import java.io.IOException
 import java.util.concurrent.atomic.AtomicBoolean
 
 /**
- * A singleton in [com.rusty.aurora.di.AppContainer] with no natural
- * ViewModel-scoped lifecycle to borrow, so it owns its own background
- * scope for refreshes - same reasoning as why AuroraServerController owns
- * its own lifecycle rather than depending on one.
- *
- * Resolves the phone's current location on every refresh rather than once
- * at construction - a new [OpenMeteoClient] is built per refresh with
- * whatever coordinate [LocationRepository] currently reports, falling back
- * to [WeatherConfig]'s fixed coordinate if location isn't available (no
- * permission, or no fix ever obtained).
+ * Mirrors [WeatherRepositoryImpl]'s own shape - own background scope, own
+ * refresh-in-flight guard, cache that survives a failed refresh untouched -
+ * just against a shorter cache window (see [WeatherConfig]) and NWS's
+ * alerts endpoint instead of Open-Meteo's forecast one.
  */
-class WeatherRepositoryImpl(
+class WeatherAlertRepositoryImpl(
     context: Context,
     private val locationRepository: LocationRepository
-) : WeatherRepository {
+) : WeatherAlertRepository {
 
     private val networkStatusProvider = NetworkStatusProvider(context)
-    private val cache = WeatherCache<WeatherSnapshot>(WeatherConfig.CACHE_DURATION_MILLIS)
+    private val cache = WeatherCache<WeatherAlert?>(WeatherConfig.ALERT_CACHE_DURATION_MILLIS)
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
-    // Guards against a burst of /dashboard polls each kicking off their own
-    // redundant network call while one refresh is already in flight.
     private val isRefreshing = AtomicBoolean(false)
 
-    override fun getWeather(): WeatherSnapshot? {
+    override fun getAlert(): WeatherAlert? {
         if (cache.isStaleOrEmpty) {
             refreshIfNotAlreadyRunning()
         }
@@ -52,13 +44,13 @@ class WeatherRepositoryImpl(
                     val location = locationRepository.getLastKnownLocation()
                     val latitude = location?.latitude ?: WeatherConfig.LATITUDE
                     val longitude = location?.longitude ?: WeatherConfig.LONGITUDE
-                    cache.store(OpenMeteoClient(latitude, longitude).fetchCurrentWeather())
+                    cache.store(NwsAlertClient(latitude, longitude).fetchActiveAlert())
                 }
-                // Offline: leave the existing cache (possibly still null) untouched.
+                // Offline: leave the existing cache (possibly still empty) untouched.
             } catch (e: IOException) {
-                Log.w(TAG, "Weather refresh failed, keeping cached data", e)
+                Log.w(TAG, "Weather alert refresh failed, keeping cached data", e)
             } catch (e: SerializationException) {
-                Log.w(TAG, "Weather response could not be parsed, keeping cached data", e)
+                Log.w(TAG, "Weather alert response could not be parsed, keeping cached data", e)
             } finally {
                 isRefreshing.set(false)
             }
@@ -66,6 +58,6 @@ class WeatherRepositoryImpl(
     }
 
     private companion object {
-        const val TAG = "WeatherRepository"
+        const val TAG = "WeatherAlertRepository"
     }
 }

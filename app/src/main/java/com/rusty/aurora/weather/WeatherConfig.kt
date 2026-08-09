@@ -13,4 +13,7 @@ object WeatherConfig {
     const val LATITUDE = 30.1588
     const val LONGITUDE = -81.6206
     const val CACHE_DURATION_MILLIS = 15 * 60 * 1000L
+    // Shorter than weather's own cache - a severe alert is time-critical
+    // enough to be worth refreshing more often.
+    const val ALERT_CACHE_DURATION_MILLIS = 10 * 60 * 1000L
 }

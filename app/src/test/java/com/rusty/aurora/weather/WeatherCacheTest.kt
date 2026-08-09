@@ -13,7 +13,7 @@ class WeatherCacheTest {
 
     @Test
     fun `empty cache is stale and has no current value`() {
-        val cache = WeatherCache(cacheDurationMillis = 1000L) { 0L }
+        val cache = WeatherCache<WeatherSnapshot>(cacheDurationMillis = 1000L) { 0L }
 
         assertTrue(cache.isStaleOrEmpty)
         assertNull(cache.current)
@@ -22,7 +22,7 @@ class WeatherCacheTest {
     @Test
     fun `freshly stored value is not stale and is returned as current`() {
         val now = 0L
-        val cache = WeatherCache(cacheDurationMillis = 1000L) { now }
+        val cache = WeatherCache<WeatherSnapshot>(cacheDurationMillis = 1000L) { now }
 
         cache.store(snapshot)
 
@@ -33,7 +33,7 @@ class WeatherCacheTest {
     @Test
     fun `value becomes stale once the cache duration elapses, but is not discarded`() {
         var now = 0L
-        val cache = WeatherCache(cacheDurationMillis = 1000L) { now }
+        val cache = WeatherCache<WeatherSnapshot>(cacheDurationMillis = 1000L) { now }
         cache.store(snapshot)
 
         now = 1001L
@@ -47,7 +47,7 @@ class WeatherCacheTest {
     @Test
     fun `a value exactly at the cache boundary is not yet stale`() {
         var now = 0L
-        val cache = WeatherCache(cacheDurationMillis = 1000L) { now }
+        val cache = WeatherCache<WeatherSnapshot>(cacheDurationMillis = 1000L) { now }
         cache.store(snapshot)
 
         now = 1000L
@@ -58,7 +58,7 @@ class WeatherCacheTest {
     @Test
     fun `not calling store leaves the previous value in place - the failed-refresh path`() {
         var now = 0L
-        val cache = WeatherCache(cacheDurationMillis = 1000L) { now }
+        val cache = WeatherCache<WeatherSnapshot>(cacheDurationMillis = 1000L) { now }
         cache.store(snapshot)
 
         // Simulate a failed refresh: time passes, but nothing calls store().

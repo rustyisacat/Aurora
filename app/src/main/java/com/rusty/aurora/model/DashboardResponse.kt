@@ -10,6 +10,7 @@ import com.rusty.aurora.photo.WallpaperScheduleEntry
 import com.rusty.aurora.sound.SoundMachineState
 import com.rusty.aurora.wakealarm.WakeAlarm
 import com.rusty.aurora.wakealarm.WakeAlarmRingingState
+import com.rusty.aurora.weather.WeatherAlert
 import com.rusty.aurora.weather.WeatherSnapshot
 import kotlinx.serialization.Serializable
 
@@ -38,6 +39,9 @@ import kotlinx.serialization.Serializable
  * the same "well-defined state, not an absence of data" reason as
  * soundMachine. defaultAlarmSoundId is null until the user picks one from
  * the dashboard - see WakeAlarmRepository.getDefaultAlarmSoundId.
+ * weatherAlert is the single highest-severity active NWS alert for the
+ * current location, null when there's nothing active (the common case) or
+ * nothing fetched yet - see WeatherAlertRepository.
  */
 @Serializable
 data class DashboardResponse(
@@ -69,5 +73,6 @@ data class DashboardResponse(
     // wallpaperSchedule - see WallpaperConfigRepository.
     val wallpaperMode: WallpaperMode = WallpaperMode.ROTATING,
     val wallpaperSinglePhotoId: String? = null,
-    val wallpaperSchedule: List<WallpaperScheduleEntry> = emptyList()
+    val wallpaperSchedule: List<WallpaperScheduleEntry> = emptyList(),
+    val weatherAlert: WeatherAlert? = null
 )

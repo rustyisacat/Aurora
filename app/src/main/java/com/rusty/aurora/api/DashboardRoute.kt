@@ -11,6 +11,7 @@ import com.rusty.aurora.photo.WallpaperConfigRepository
 import com.rusty.aurora.profile.UserProfileRepository
 import com.rusty.aurora.sound.SoundRepository
 import com.rusty.aurora.wakealarm.WakeAlarmRepository
+import com.rusty.aurora.weather.WeatherAlertRepository
 import com.rusty.aurora.weather.WeatherRepository
 import fi.iki.elonen.NanoHTTPD
 import fi.iki.elonen.NanoHTTPD.Response.Status
@@ -28,7 +29,8 @@ class DashboardRoute(
     private val layoutRepository: LayoutRepository,
     private val userProfileRepository: UserProfileRepository,
     private val dndRepository: DndRepository,
-    private val wallpaperConfigRepository: WallpaperConfigRepository
+    private val wallpaperConfigRepository: WallpaperConfigRepository,
+    private val weatherAlertRepository: WeatherAlertRepository
 ) : Route {
 
     // encodeDefaults=true keeps nextAlarm/weather present as explicit JSON
@@ -59,7 +61,8 @@ class DashboardRoute(
             chargingEtaMinutes = batteryRepository.getChargingEtaMinutes(),
             wallpaperMode = wallpaperConfigRepository.getMode(),
             wallpaperSinglePhotoId = wallpaperConfigRepository.getSinglePhotoId(),
-            wallpaperSchedule = wallpaperConfigRepository.getSchedule()
+            wallpaperSchedule = wallpaperConfigRepository.getSchedule(),
+            weatherAlert = weatherAlertRepository.getAlert()
         )
         return NanoHTTPD.newFixedLengthResponse(
             Status.OK,

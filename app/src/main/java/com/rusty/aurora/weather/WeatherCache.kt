@@ -1,22 +1,25 @@
 package com.rusty.aurora.weather
 
 /**
- * The 15-minute cache/staleness policy, isolated from network and Android
- * dependencies so it's a plain JVM unit test: inject a fake clock, verify
- * staleness transitions and that a failed refresh (which simply never calls
- * [store]) leaves the previous snapshot in place.
+ * A staleness/store cache generic over its stored value, so both
+ * [WeatherRepositoryImpl] and [WeatherAlertRepositoryImpl] can share this
+ * same policy with different cache durations instead of duplicating it.
+ * Isolated from network and Android dependencies so it's a plain JVM unit
+ * test: inject a fake clock, verify staleness transitions and that a failed
+ * refresh (which simply never calls [store]) leaves the previous value in
+ * place.
  */
-internal class WeatherCache(
+internal class WeatherCache<T>(
     private val cacheDurationMillis: Long,
     private val clock: () -> Long = System::currentTimeMillis
 ) {
-    private data class Entry(val snapshot: WeatherSnapshot, val fetchedAtMillis: Long)
+    private data class Entry<T>(val value: T, val fetchedAtMillis: Long)
 
     @Volatile
-    private var entry: Entry? = null
+    private var entry: Entry<T>? = null
 
-    val current: WeatherSnapshot?
-        get() = entry?.snapshot
+    val current: T?
+        get() = entry?.value
 
     val isStaleOrEmpty: Boolean
         get() {
@@ -24,7 +27,7 @@ internal class WeatherCache(
             return clock() - current.fetchedAtMillis > cacheDurationMillis
         }
 
-    fun store(snapshot: WeatherSnapshot) {
-        entry = Entry(snapshot, clock())
+    fun store(value: T) {
+        entry = Entry(value, clock())
     }
 }

@@ -57,6 +57,8 @@ import com.rusty.aurora.sound.SoundRepositoryImpl
 import com.rusty.aurora.wakealarm.WakeAlarmRepository
 import com.rusty.aurora.wakealarm.WakeAlarmRepositoryImpl
 import com.rusty.aurora.wakealarm.WakeAlarmScheduler
+import com.rusty.aurora.weather.WeatherAlertRepository
+import com.rusty.aurora.weather.WeatherAlertRepositoryImpl
 import com.rusty.aurora.weather.WeatherRepository
 import com.rusty.aurora.weather.WeatherRepositoryImpl
 
@@ -95,6 +97,9 @@ class AppContainer(context: Context) {
     val locationRepository: LocationRepository = LocationRepositoryImpl(context)
 
     val weatherRepository: WeatherRepository = WeatherRepositoryImpl(context, locationRepository)
+
+    val weatherAlertRepository: WeatherAlertRepository =
+        WeatherAlertRepositoryImpl(context, locationRepository)
 
     // Aurora never plays audio itself - it tracks desired sound machine
     // state and serves the raw bytes (SoundStreamRoute); the Echo Show's
@@ -135,7 +140,8 @@ class AppContainer(context: Context) {
             layoutRepository = layoutRepository,
             userProfileRepository = userProfileRepository,
             dndRepository = dndRepository,
-            wallpaperConfigRepository = wallpaperConfigRepository
+            wallpaperConfigRepository = wallpaperConfigRepository,
+            weatherAlertRepository = weatherAlertRepository
         ),
         PlaySoundRoute(soundRepository),
         PauseSoundRoute(soundRepository),
