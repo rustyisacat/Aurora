@@ -1,6 +1,22 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
 
+    <!-- Android 11+ package-visibility: without this, AuroraNotificationListenerService
+         can see a StatusBarNotification's title/text just fine (that data comes bundled
+         in the notification itself) but PackageManager.getApplicationLabel/getApplicationInfo
+         for that same package throws NameNotFoundException, silently degrading the
+         Notifications card to raw package names ("com.instagram.lite") instead of the
+         app's real display name - notification access does not imply package visibility,
+         these are two separate Android restrictions. The MAIN/LAUNCHER intent query covers
+         every regular user-facing app (anything with a home-screen icon), which is
+         effectively "any app that could plausibly post a notification" here. -->
+    <queries>
+        <intent>
+            <action android:name="android.intent.action.MAIN" />
+            <category android:name="android.intent.category.LAUNCHER" />
+        </intent>
+    </queries>
+
     <!-- Required for NanoHTTPD to open a listening server socket, not just for outbound requests. -->
     <uses-permission android:name="android.permission.INTERNET" />
 
