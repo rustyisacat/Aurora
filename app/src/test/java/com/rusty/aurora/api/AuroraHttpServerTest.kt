@@ -315,7 +315,7 @@ class AuroraHttpServerTest {
                 """"nextAlarm":{"time":"07:00","enabled":true},""" +
                 """"calendar":[{"title":"School","start":"08:00","end":"15:00","allDay":false}],""" +
                 """"calendarShowsTomorrow":false,""" +
-                """"weather":{"temperature":74,"condition":"Clear","high":86,"low":68,"timezone":"America/New_York","sunrise":"06:15","sunset":"20:42","rainExpectedAt":null,"radarStation":null},""" +
+                """"weather":{"temperature":74,"condition":"Clear","high":86,"low":68,"timezone":"America/New_York","sunrise":"06:15","sunset":"20:42","rainExpectedAt":null,"dailyForecast":[],"airQualityIndex":null,"radarStation":null},""" +
                 """"soundMachine":{"playing":false,"sound":null,"volume":50,"sleepTimerMinutes":null},""" +
                 """"wakeAlarms":[],""" +
                 """"wakeAlarmRinging":{"ringing":false,"alarmId":null,"label":"","soundId":null},""" +

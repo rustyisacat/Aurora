@@ -144,4 +144,59 @@ class OpenMeteoResponseParserTest {
 
         assertEquals(null, OpenMeteoResponseParser.parse(json).rainExpectedAt)
     }
+
+    @Test
+    fun `rainExpectedAt ignores tomorrow's hours even if they clear the threshold`() {
+        val json = """
+            {
+              "timezone": "America/New_York",
+              "current": { "time": "2026-07-29T22:00", "temperature_2m": 74.3, "weather_code": 0 },
+              "daily": { "temperature_2m_max": [86.1], "temperature_2m_min": [68.4] },
+              "hourly": {
+                "time": ["2026-07-29T22:00", "2026-07-29T23:00", "2026-07-30T00:00", "2026-07-30T01:00"],
+                "precipitation_probability": [10, 20, 90, 90]
+              }
+            }
+        """.trimIndent()
+
+        assertEquals(null, OpenMeteoResponseParser.parse(json).rainExpectedAt)
+    }
+
+    @Test
+    fun `dailyForecast is empty when the response has no daily time or weather_code`() {
+        val json = """
+            {
+              "timezone": "America/New_York",
+              "current": { "temperature_2m": 74.3, "weather_code": 0 },
+              "daily": { "temperature_2m_max": [86.1], "temperature_2m_min": [68.4] }
+            }
+        """.trimIndent()
+
+        assertEquals(emptyList<DailyForecastEntry>(), OpenMeteoResponseParser.parse(json).dailyForecast)
+    }
+
+    @Test
+    fun `dailyForecast zips date, high, low, and condition by index`() {
+        val json = """
+            {
+              "timezone": "America/New_York",
+              "current": { "temperature_2m": 74.3, "weather_code": 0 },
+              "daily": {
+                "time": ["2026-07-29", "2026-07-30", "2026-07-31"],
+                "temperature_2m_max": [86.1, 88.4, 79.9],
+                "temperature_2m_min": [68.4, 70.1, 65.2],
+                "weather_code": [0, 61, 71]
+              }
+            }
+        """.trimIndent()
+
+        assertEquals(
+            listOf(
+                DailyForecastEntry(date = "2026-07-29", high = 86, low = 68, condition = "Clear"),
+                DailyForecastEntry(date = "2026-07-30", high = 88, low = 70, condition = "Rain"),
+                DailyForecastEntry(date = "2026-07-31", high = 80, low = 65, condition = "Snow")
+            ),
+            OpenMeteoResponseParser.parse(json).dailyForecast
+        )
+    }
 }

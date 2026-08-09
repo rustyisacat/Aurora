@@ -36,7 +36,12 @@ internal data class OpenMeteoResponse(
         // whatever timezone this response's own `timezone` field names,
         // thanks to &timezone=auto, so no conversion is needed here.
         val sunrise: List<String> = emptyList(),
-        val sunset: List<String> = emptyList()
+        val sunset: List<String> = emptyList(),
+        // Plain "YYYY-MM-DD", one per forecast day (index 0 is today) -
+        // used to build DailyForecastEntry.date, and to line up with
+        // high/low/weatherCode by index.
+        val time: List<String> = emptyList(),
+        @SerialName("weather_code") val weatherCode: List<Int> = emptyList()
     )
 
     @Serializable

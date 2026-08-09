@@ -18,11 +18,11 @@ internal class OpenMeteoClient(
             "https://api.open-meteo.com/v1/forecast" +
                 "?latitude=$latitude&longitude=$longitude" +
                 "&current=temperature_2m,weather_code" +
-                "&daily=temperature_2m_max,temperature_2m_min,sunrise,sunset" +
+                "&daily=temperature_2m_max,temperature_2m_min,sunrise,sunset,weather_code" +
                 "&hourly=precipitation_probability" +
                 "&temperature_unit=fahrenheit" +
                 "&timezone=auto" +
-                "&forecast_days=1"
+                "&forecast_days=${WeatherConfig.FORECAST_DAYS}"
         )
 
         val connection = url.openConnection() as HttpURLConnection

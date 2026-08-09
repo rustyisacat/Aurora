@@ -23,6 +23,17 @@ data class WeatherSnapshot(
     // no rain expected today, not "unknown" - the dashboard uses this
     // directly to decide whether to show an umbrella heads-up.
     val rainExpectedAt: String? = null,
+    // Today plus the next few days (see WeatherConfig.FORECAST_DAYS) -
+    // empty only if Open-Meteo's response omitted the daily block's time/
+    // weather_code entirely, which shouldn't happen in practice.
+    val dailyForecast: List<DailyForecastEntry> = emptyList(),
+    // US EPA Air Quality Index (0-500+) for this snapshot's coordinate -
+    // null if the lookup failed or hasn't completed yet, same "unknown,
+    // not absence of weather" meaning as radarStation below. The
+    // dashboard derives the Good/Moderate/... category client-side from
+    // the standard EPA breakpoints rather than Aurora doing it, since
+    // it's a pure function of the number with nothing else to know.
+    val airQualityIndex: Int? = null,
     // 4-letter NWS radar station id (e.g. "KJAX") covering this snapshot's
     // coordinate - null if the lookup failed, same "unknown, not absence
     // of weather" meaning as everything else here. The dashboard uses this

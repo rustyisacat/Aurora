@@ -54,7 +54,8 @@ class WeatherRepositoryImpl(
                     val longitude = location?.longitude ?: WeatherConfig.LONGITUDE
                     val snapshot = OpenMeteoClient(latitude, longitude).fetchCurrentWeather()
                     val radarStation = fetchRadarStation(latitude, longitude)
-                    cache.store(snapshot.copy(radarStation = radarStation))
+                    val airQualityIndex = fetchAirQualityIndex(latitude, longitude)
+                    cache.store(snapshot.copy(radarStation = radarStation, airQualityIndex = airQualityIndex))
                 }
                 // Offline: leave the existing cache (possibly still null) untouched.
             } catch (e: IOException) {
@@ -81,6 +82,21 @@ class WeatherRepositoryImpl(
         } catch (e: SerializationException) {
             Log.w(TAG, "Radar station response could not be parsed, keeping previous value", e)
             cache.current?.radarStation
+        }
+
+    /** Same own-try/catch, fall-back-to-cached reasoning as
+     *  [fetchRadarStation] - a failed air quality lookup shouldn't discard
+     *  an otherwise-successful weather fetch or blank out a working AQI
+     *  reading over one transient hiccup. */
+    private fun fetchAirQualityIndex(latitude: Double, longitude: Double): Int? =
+        try {
+            OpenMeteoAirQualityClient(latitude, longitude).fetchUsAqi()
+        } catch (e: IOException) {
+            Log.w(TAG, "Air quality refresh failed, keeping previous value", e)
+            cache.current?.airQualityIndex
+        } catch (e: SerializationException) {
+            Log.w(TAG, "Air quality response could not be parsed, keeping previous value", e)
+            cache.current?.airQualityIndex
         }
 
     private companion object {

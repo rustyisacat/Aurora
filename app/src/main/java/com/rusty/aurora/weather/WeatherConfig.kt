@@ -16,4 +16,8 @@ object WeatherConfig {
     // Shorter than weather's own cache - a severe alert is time-critical
     // enough to be worth refreshing more often.
     const val ALERT_CACHE_DURATION_MILLIS = 10 * 60 * 1000L
+    // Today plus this many upcoming days, for the dashboard's forecast
+    // strip. 5 is a common weather-app convention and fits the Echo
+    // Show's width without the per-day cells getting cramped.
+    const val FORECAST_DAYS = 5
 }

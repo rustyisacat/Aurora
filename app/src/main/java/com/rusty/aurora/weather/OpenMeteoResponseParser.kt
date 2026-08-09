@@ -27,8 +27,25 @@ internal object OpenMeteoResponseParser {
             timezone = response.timezone,
             sunrise = response.daily.sunrise.firstOrNull()?.let(::extractTimeOfDay),
             sunset = response.daily.sunset.firstOrNull()?.let(::extractTimeOfDay),
-            rainExpectedAt = findRainExpectedAt(response)
+            rainExpectedAt = findRainExpectedAt(response),
+            dailyForecast = buildDailyForecast(response.daily)
         )
+    }
+
+    /** Today plus whatever additional days the response's daily block
+     *  includes (see WeatherConfig.FORECAST_DAYS) - zips time/high/low/
+     *  weatherCode by index, stopping at the shortest of the four in case
+     *  Open-Meteo ever returns mismatched lengths. */
+    private fun buildDailyForecast(daily: OpenMeteoResponse.DailyBlock): List<DailyForecastEntry> {
+        val count = minOf(daily.time.size, daily.high.size, daily.low.size, daily.weatherCode.size)
+        return (0 until count).map { i ->
+            DailyForecastEntry(
+                date = daily.time[i],
+                high = daily.high[i].roundToInt(),
+                low = daily.low[i].roundToInt(),
+                condition = WeatherConditionMapper.toCondition(daily.weatherCode[i])
+            )
+        }
     }
 
     /** "2026-07-27T06:15" -> "06:15" */
@@ -38,12 +55,18 @@ internal object OpenMeteoResponseParser {
     /** First hour from now through the end of today whose precipitation
      *  probability clears [RAIN_PROBABILITY_THRESHOLD] - null if none does.
      *  ISO 8601 datetime strings sort chronologically as plain strings, so
-     *  this needs no date parsing to compare against [current time][isoNow]. */
+     *  this needs no date parsing to compare against [current time][isoNow].
+     *  Explicitly bounded to today's date prefix - now that the request
+     *  covers several forecast days (see WeatherConfig.FORECAST_DAYS), the
+     *  hourly array spans more than just today, and this is meant to stay
+     *  a same-day "bring an umbrella" nudge, not a several-days-out one. */
     private fun findRainExpectedAt(response: OpenMeteoResponse): String? {
         val isoNow = response.current.time
+        val today = isoNow.substringBefore('T')
         val hourly = response.hourly
         for (i in hourly.time.indices) {
             val hour = hourly.time[i]
+            if (!hour.startsWith(today)) continue
             if (hour < isoNow) continue
             val probability = hourly.precipitationProbability.getOrNull(i) ?: continue
             if (probability >= RAIN_PROBABILITY_THRESHOLD) return extractTimeOfDay(hour)
