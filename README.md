@@ -3,7 +3,7 @@
 ![Platform](https://img.shields.io/badge/platform-Android-3DDC84?logo=android&logoColor=white)
 ![Kotlin](https://img.shields.io/badge/Kotlin-2.2-7F52FF?logo=kotlin&logoColor=white)
 ![Jetpack Compose](https://img.shields.io/badge/UI-Jetpack%20Compose-4285F4?logo=jetpackcompose&logoColor=white)
-![Version](https://img.shields.io/badge/version-3.0-blue)
+![Version](https://img.shields.io/badge/version-4.0-blue)
 ![License: AGPL v3](https://img.shields.io/badge/License-AGPL%20v3-blue.svg)
 
 Aurora turns an Android phone into the backend for a self-hosted bedside
@@ -21,6 +21,40 @@ just your phone talking HTTP to a screen on the same network.
   <img src="docs/screenshot-main.png" width="45%" alt="Aurora app main screen" />
   <img src="docs/screenshot-customize.png" width="45%" alt="Customize Dashboard screen" />
 </p>
+
+## What's new in v4.0
+
+The dashboard can now control almost everything that used to require
+picking up the phone:
+
+- **Dashboard-controlled Settings**: display name, home-network subnet,
+  per-app notification blocklist, wallpaper mode/photo/schedule, and the
+  Overview page's tile layout (visibility/size/order) are all now
+  editable from the Echo Show itself — new write routes
+  (`/settings/name`, `/settings/home-network`, `/notifications/apps` +
+  `/notifications/block`, `/photos/wallpaper/mode|single|schedule`,
+  `/layout`) alongside the existing phone-app screens, which still work
+  too. Only what genuinely can't move stayed phone-only: granting Android
+  permissions, and the initial *import* of custom sounds/photos (both
+  need the phone's own filesystem — there's nothing on the Echo Show to
+  pick from).
+- **Weather got substantially deeper**: NWS severe weather alerts, a live
+  NWS radar image, US EPA Air Quality Index, a 5-day forecast, and
+  today's peak precipitation probability — all still zero-API-key,
+  cached, and background-refreshed the same way current conditions
+  always were.
+- **Notifications got smarter**: grouped by app with real launcher icons
+  and a preview of the latest notification (not just a bare count), a
+  dashboard-side privacy toggle that hides preview text while keeping
+  counts, and the per-app blocklist is now dashboard-editable too (see
+  above).
+- A round of quality-of-life refinements: moon phase, a dim-intensity
+  slider alongside the existing dim-schedule one, 12h/24h and °F/°C
+  display toggles, a dashboard-only sticky-note reminder, editable wake
+  alarm labels, a screen-brightness ramp during alarm ringing (to match
+  the existing volume ramp), a Sound Machine mute button and
+  recently-played chips, a bedtime low-battery nudge tied to Bedside
+  Mode, and an optional schedule to enter Bedside Mode automatically.
 
 ## What's new in v3.0
 
@@ -226,16 +260,18 @@ a permanent location than grant location access.
   "nextAlarm": { "time": "07:00", "enabled": true },
   "calendar": [{ "title": "School", "start": "08:00", "end": "15:00", "allDay": false }],
   "calendarShowsTomorrow": false,
-  "weather": { "temperature": 74, "condition": "Clear", "high": 86, "low": 68, "timezone": "America/New_York", "sunrise": "06:15", "sunset": "20:42", "rainExpectedAt": null },
+  "weather": { "temperature": 74, "condition": "Clear", "high": 86, "low": 68, "timezone": "America/New_York", "sunrise": "06:15", "sunset": "20:42", "rainExpectedAt": null, "precipitationProbability": 20, "feelsLike": 76, "windSpeedMph": 6, "humidityPercent": 55, "uvIndex": 6, "dailyForecast": [{ "date": "2026-08-10", "high": 86, "low": 68, "condition": "Clear" }], "airQualityIndex": 32, "radarStation": "KJAX" },
   "soundMachine": { "playing": false, "sound": null, "volume": 50, "sleepTimerMinutes": null },
   "wakeAlarms": [{ "id": "…", "hour": 6, "minute": 30, "daysOfWeek": [2, 3, 4, 5, 6], "enabled": true, "label": "", "soundId": "rain" }],
   "wakeAlarmRinging": { "ringing": false, "alarmId": null, "label": "", "soundId": null },
   "layout": [{ "id": "weather", "visible": true, "size": "medium" }],
+  "userName": "Rusty",
   "dndEnabled": false,
   "chargingEtaMinutes": null,
   "wallpaperMode": "rotating",
   "wallpaperSinglePhotoId": null,
-  "wallpaperSchedule": []
+  "wallpaperSchedule": [],
+  "weatherAlert": null
 }
 ```
 
@@ -257,10 +293,19 @@ Sound Machine control routes (`POST /sound/play`, `/sound/pause`,
 `/wakealarms/snooze`), the photo routes (`GET /photos/library`,
 `GET /photos/stream`), `POST /dnd/set`, and `GET /notifications/icon?package=`
 (an app's launcher icon as a PNG) exist for the dashboard's own use — see
-[echo-dashboard](https://github.com/rustyisacat/echo-dashboard). Which
-apps' notifications are excluded, and the wallpaper mode/single photo/
-schedule, are all phone-app-only configuration - the dashboard only ever
-reads them, never writes them back.
+[echo-dashboard](https://github.com/rustyisacat/echo-dashboard).
+
+As of v4.0, most remaining phone-only configuration is dashboard-editable
+too: `POST /settings/name`, `GET`/`POST /settings/home-network`,
+`GET /notifications/apps` + `POST /notifications/block` (the per-app
+blocklist), `POST /photos/wallpaper/mode|single|schedule`, and
+`POST /layout` (the tile order/visibility/size array). The last two of
+those take a JSON body instead of query params, the only routes that do —
+everything else here is 0-1 scalar arguments, which a query string handles
+without needing this app's first request-body parser. What's left
+phone-only is genuinely phone-only: granting Android permissions, and
+picking new sounds/photos in the first place (both need the phone's own
+filesystem, which the dashboard has no access to).
 
 ## Architecture
 
