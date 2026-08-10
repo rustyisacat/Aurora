@@ -23,6 +23,12 @@ data class WeatherSnapshot(
     // no rain expected today, not "unknown" - the dashboard uses this
     // directly to decide whether to show an umbrella heads-up.
     val rainExpectedAt: String? = null,
+    // Today's peak hourly precipitation probability (0-100), from now
+    // through end of day - same today-only bounding as rainExpectedAt,
+    // computed from the same hourly block, just reported as a number
+    // instead of a threshold-crossing time. Null means no hourly data
+    // was available, not "0% chance".
+    val precipitationProbability: Int? = null,
     // Rounded °F, mph, and % respectively - null only if Open-Meteo's
     // response omitted them, same defensive reasoning as sunrise/sunset.
     val feelsLike: Int? = null,

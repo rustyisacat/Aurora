@@ -146,6 +146,53 @@ class OpenMeteoResponseParserTest {
     }
 
     @Test
+    fun `precipitationProbability is the highest upcoming value today`() {
+        val json = """
+            {
+              "timezone": "America/New_York",
+              "current": { "time": "2026-07-29T12:00", "temperature_2m": 74.3, "weather_code": 0 },
+              "daily": { "temperature_2m_max": [86.1], "temperature_2m_min": [68.4] },
+              "hourly": {
+                "time": ["2026-07-29T11:00", "2026-07-29T12:00", "2026-07-29T13:00", "2026-07-29T14:00"],
+                "precipitation_probability": [95, 20, 30, 60]
+              }
+            }
+        """.trimIndent()
+
+        assertEquals(60, OpenMeteoResponseParser.parse(json).precipitationProbability)
+    }
+
+    @Test
+    fun `precipitationProbability ignores tomorrow's hours`() {
+        val json = """
+            {
+              "timezone": "America/New_York",
+              "current": { "time": "2026-07-29T22:00", "temperature_2m": 74.3, "weather_code": 0 },
+              "daily": { "temperature_2m_max": [86.1], "temperature_2m_min": [68.4] },
+              "hourly": {
+                "time": ["2026-07-29T22:00", "2026-07-29T23:00", "2026-07-30T00:00"],
+                "precipitation_probability": [10, 20, 90]
+              }
+            }
+        """.trimIndent()
+
+        assertEquals(20, OpenMeteoResponseParser.parse(json).precipitationProbability)
+    }
+
+    @Test
+    fun `precipitationProbability is null when the response has no hourly block`() {
+        val json = """
+            {
+              "timezone": "America/New_York",
+              "current": { "temperature_2m": 74.3, "weather_code": 0 },
+              "daily": { "temperature_2m_max": [86.1], "temperature_2m_min": [68.4] }
+            }
+        """.trimIndent()
+
+        assertEquals(null, OpenMeteoResponseParser.parse(json).precipitationProbability)
+    }
+
+    @Test
     fun `rainExpectedAt ignores tomorrow's hours even if they clear the threshold`() {
         val json = """
             {

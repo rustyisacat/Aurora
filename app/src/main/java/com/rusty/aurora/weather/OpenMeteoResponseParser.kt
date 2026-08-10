@@ -28,6 +28,7 @@ internal object OpenMeteoResponseParser {
             sunrise = response.daily.sunrise.firstOrNull()?.let(::extractTimeOfDay),
             sunset = response.daily.sunset.firstOrNull()?.let(::extractTimeOfDay),
             rainExpectedAt = findRainExpectedAt(response),
+            precipitationProbability = findTodayMaxPrecipitationProbability(response),
             feelsLike = response.current.feelsLike?.roundToInt(),
             windSpeedMph = response.current.windSpeed?.roundToInt(),
             humidityPercent = response.current.humidity,
@@ -76,5 +77,23 @@ internal object OpenMeteoResponseParser {
             if (probability >= RAIN_PROBABILITY_THRESHOLD) return extractTimeOfDay(hour)
         }
         return null
+    }
+
+    /** Highest hourly probability from now through the end of today - same
+     *  today-only bounding as [findRainExpectedAt], just reported as the
+     *  peak number rather than a threshold-crossing time. */
+    private fun findTodayMaxPrecipitationProbability(response: OpenMeteoResponse): Int? {
+        val isoNow = response.current.time
+        val today = isoNow.substringBefore('T')
+        val hourly = response.hourly
+        var max: Int? = null
+        for (i in hourly.time.indices) {
+            val hour = hourly.time[i]
+            if (!hour.startsWith(today)) continue
+            if (hour < isoNow) continue
+            val probability = hourly.precipitationProbability.getOrNull(i) ?: continue
+            if (max == null || probability > max) max = probability
+        }
+        return max
     }
 }
