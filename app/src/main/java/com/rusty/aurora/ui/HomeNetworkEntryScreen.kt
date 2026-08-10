@@ -22,6 +22,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.rusty.aurora.network.normalizeSubnetPrefix
 import com.rusty.aurora.ui.theme.AuroraTextSecondary
 
 /**
@@ -88,13 +89,4 @@ fun HomeNetworkEntryScreen(
             }
         }
     }
-}
-
-/** "192.168.1" or "192.168.1." -> "192.168.1."; null if not three valid
- *  0-255 octets. */
-private fun normalizeSubnetPrefix(input: String): String? {
-    val octets = input.trim().removeSuffix(".").split(".")
-    if (octets.size != 3) return null
-    if (octets.any { octet -> octet.toIntOrNull()?.let { it in 0..255 } != true }) return null
-    return octets.joinToString(".", postfix = ".")
 }

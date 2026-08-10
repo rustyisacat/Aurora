@@ -9,13 +9,19 @@ import com.rusty.aurora.calendar.CalendarRepository
 import com.rusty.aurora.layout.DEFAULT_TILE_LAYOUT
 import com.rusty.aurora.layout.LayoutRepository
 import com.rusty.aurora.layout.TileConfig
+import com.rusty.aurora.layout.TileSize
+import com.rusty.aurora.network.HomeNetworkRepository
 import com.rusty.aurora.notifications.DndRepository
+import com.rusty.aurora.notifications.KnownApp
+import com.rusty.aurora.notifications.NotificationBlocklistRepository
 import com.rusty.aurora.notifications.NotificationCountRepositoryImpl
 import com.rusty.aurora.notifications.NotificationGroup
 import com.rusty.aurora.photo.WallpaperConfigRepository
 import com.rusty.aurora.photo.WallpaperMode
 import com.rusty.aurora.photo.WallpaperScheduleEntry
 import com.rusty.aurora.profile.UserProfileRepository
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
 import com.rusty.aurora.sound.SoundInfo
 import com.rusty.aurora.sound.SoundMachineState
 import com.rusty.aurora.sound.SoundRepository
@@ -123,6 +129,34 @@ class AuroraHttpServerTest {
         }
     }
 
+    private class FakeHomeNetworkRepository(private var prefix: String? = null) : HomeNetworkRepository {
+        override fun getHomeSubnetPrefix(): String? = prefix
+        override fun setHomeSubnetPrefix(prefix: String) {
+            this.prefix = prefix
+        }
+    }
+
+    private class FakeNotificationBlocklistRepository(
+        knownApps: List<KnownApp> = emptyList(),
+        blocked: Set<String> = emptySet()
+    ) : NotificationBlocklistRepository {
+        private val _knownApps = MutableStateFlow(knownApps)
+        override val knownApps: StateFlow<List<KnownApp>> = _knownApps
+
+        private val _blockedPackages = MutableStateFlow(blocked)
+        override val blockedPackages: StateFlow<Set<String>> = _blockedPackages
+
+        override fun recordSeen(packageName: String, label: String) {
+            if (_knownApps.value.none { it.packageName == packageName }) {
+                _knownApps.value = _knownApps.value + KnownApp(packageName, label)
+            }
+        }
+
+        override fun setBlocked(packageName: String, blocked: Boolean) {
+            _blockedPackages.value = if (blocked) _blockedPackages.value + packageName else _blockedPackages.value - packageName
+        }
+    }
+
     private class FakeWakeAlarmRepository(
         private var alarms: List<WakeAlarm> = emptyList(),
         private var ringing: WakeAlarmRingingState = WakeAlarmRingingState()
@@ -221,6 +255,12 @@ class AuroraHttpServerTest {
     private var server: AuroraHttpServer? = null
     private lateinit var fakeSoundRepository: FakeSoundRepository
     private lateinit var fakeWakeAlarmRepository: FakeWakeAlarmRepository
+    private lateinit var fakeLayoutRepository: FakeLayoutRepository
+    private lateinit var fakeUserProfileRepository: FakeUserProfileRepository
+    private lateinit var fakeHomeNetworkRepository: FakeHomeNetworkRepository
+    private lateinit var fakeNotificationBlocklistRepository: FakeNotificationBlocklistRepository
+    private lateinit var fakeWallpaperConfigRepository: FakeWallpaperConfigRepository
+    private lateinit var fakeNotificationCountRepository: NotificationCountRepositoryImpl
 
     @After
     fun stopServer() {
@@ -233,24 +273,32 @@ class AuroraHttpServerTest {
         weather: WeatherSnapshot? = null,
         notificationGroups: List<NotificationGroup> = emptyList(),
         wakeAlarms: List<WakeAlarm> = emptyList(),
-        wakeAlarmRinging: WakeAlarmRingingState = WakeAlarmRingingState()
+        wakeAlarmRinging: WakeAlarmRingingState = WakeAlarmRingingState(),
+        knownApps: List<KnownApp> = emptyList(),
+        blockedPackages: Set<String> = emptySet()
     ): String {
         fakeSoundRepository = FakeSoundRepository()
         fakeWakeAlarmRepository = FakeWakeAlarmRepository(wakeAlarms, wakeAlarmRinging)
+        fakeLayoutRepository = FakeLayoutRepository()
+        fakeUserProfileRepository = FakeUserProfileRepository()
+        fakeHomeNetworkRepository = FakeHomeNetworkRepository()
+        fakeNotificationBlocklistRepository = FakeNotificationBlocklistRepository(knownApps, blockedPackages)
+        fakeWallpaperConfigRepository = FakeWallpaperConfigRepository()
+        fakeNotificationCountRepository = NotificationCountRepositoryImpl().apply { update(notificationGroups) }
         val routes = listOf(
             HealthRoute(),
             DashboardRoute(
                 batteryRepository = FakeBatteryRepository(level = 77, charging = true),
-                notificationCountRepository = NotificationCountRepositoryImpl().apply { update(notificationGroups) },
+                notificationCountRepository = fakeNotificationCountRepository,
                 calendarRepository = FakeCalendarRepository(calendarEvents),
                 alarmRepository = FakeAlarmRepository(nextAlarm),
                 weatherRepository = FakeWeatherRepository(weather),
                 soundRepository = fakeSoundRepository,
                 wakeAlarmRepository = fakeWakeAlarmRepository,
-                layoutRepository = FakeLayoutRepository(),
-                userProfileRepository = FakeUserProfileRepository(),
+                layoutRepository = fakeLayoutRepository,
+                userProfileRepository = fakeUserProfileRepository,
                 dndRepository = FakeDndRepository(),
-                wallpaperConfigRepository = FakeWallpaperConfigRepository(),
+                wallpaperConfigRepository = fakeWallpaperConfigRepository,
                 weatherAlertRepository = FakeWeatherAlertRepository()
             ),
             PlaySoundRoute(fakeSoundRepository),
@@ -264,7 +312,16 @@ class AuroraHttpServerTest {
             SetWakeAlarmRoute(fakeWakeAlarmRepository),
             DeleteWakeAlarmRoute(fakeWakeAlarmRepository),
             DismissWakeAlarmRoute(fakeWakeAlarmRepository),
-            SnoozeWakeAlarmRoute(fakeWakeAlarmRepository)
+            SnoozeWakeAlarmRoute(fakeWakeAlarmRepository),
+            SetUserNameRoute(fakeUserProfileRepository),
+            GetHomeNetworkRoute(fakeHomeNetworkRepository),
+            SetHomeNetworkRoute(fakeHomeNetworkRepository),
+            KnownNotificationAppsRoute(fakeNotificationBlocklistRepository),
+            SetNotificationBlockedRoute(fakeNotificationBlocklistRepository, fakeNotificationCountRepository),
+            SetWallpaperModeRoute(fakeWallpaperConfigRepository),
+            SetWallpaperSinglePhotoRoute(fakeWallpaperConfigRepository),
+            SetWallpaperScheduleRoute(fakeWallpaperConfigRepository),
+            SetLayoutRoute(fakeLayoutRepository)
         )
 
         // Port 0: the OS assigns a free ephemeral port, so tests never collide
@@ -465,6 +522,158 @@ class AuroraHttpServerTest {
         assertEquals(400, get("$baseUrl/sound/stream").responseCode)
     }
 
+    @Test
+    fun `name route sets the user name, reflected on the next dashboard poll`() {
+        val baseUrl = startServer()
+
+        assertEquals(200, post("$baseUrl/settings/name?value=Rusty").responseCode)
+        assertEquals("Rusty", fakeUserProfileRepository.getUserName())
+        assertTrue(get("$baseUrl/dashboard").inputStream.bufferedReader().readText().contains(""""userName":"Rusty""""))
+    }
+
+    @Test
+    fun `name route rejects a missing or blank value with 400`() {
+        val baseUrl = startServer()
+
+        assertEquals(400, post("$baseUrl/settings/name").responseCode)
+        assertEquals(400, post("$baseUrl/settings/name?value=").responseCode)
+    }
+
+    @Test
+    fun `home-network route round-trips a valid subnet prefix`() {
+        val baseUrl = startServer()
+
+        assertEquals(200, post("$baseUrl/settings/home-network?prefix=192.168.1").responseCode)
+        assertEquals(
+            """{"prefix":"192.168.1."}""",
+            get("$baseUrl/settings/home-network").inputStream.bufferedReader().readText()
+        )
+    }
+
+    @Test
+    fun `home-network route rejects a malformed prefix with 400`() {
+        val baseUrl = startServer()
+
+        assertEquals(400, post("$baseUrl/settings/home-network?prefix=not-an-ip").responseCode)
+        assertEquals(400, post("$baseUrl/settings/home-network?prefix=999.1.1").responseCode)
+        assertNull(fakeHomeNetworkRepository.getHomeSubnetPrefix())
+    }
+
+    @Test
+    fun `known notification apps route reports each app's current blocked state`() {
+        val baseUrl = startServer(
+            knownApps = listOf(KnownApp("com.discord", "Discord"), KnownApp("com.life360", "Life360")),
+            blockedPackages = setOf("com.life360")
+        )
+        val connection = get("$baseUrl/notifications/apps")
+
+        assertEquals(200, connection.responseCode)
+        assertEquals(
+            """[{"packageName":"com.discord","label":"Discord","blocked":false},""" +
+                """{"packageName":"com.life360","label":"Life360","blocked":true}]""",
+            connection.inputStream.bufferedReader().readText()
+        )
+    }
+
+    @Test
+    fun `block route toggles an app's blocked state`() {
+        val baseUrl = startServer(knownApps = listOf(KnownApp("com.discord", "Discord")))
+
+        assertEquals(200, post("$baseUrl/notifications/block?package=com.discord&blocked=true").responseCode)
+        assertEquals(setOf("com.discord"), fakeNotificationBlocklistRepository.blockedPackages.value)
+
+        assertEquals(200, post("$baseUrl/notifications/block?package=com.discord&blocked=false").responseCode)
+        assertTrue(fakeNotificationBlocklistRepository.blockedPackages.value.isEmpty())
+    }
+
+    @Test
+    fun `block route rejects missing package or invalid blocked value with 400`() {
+        val baseUrl = startServer()
+
+        assertEquals(400, post("$baseUrl/notifications/block?blocked=true").responseCode)
+        assertEquals(400, post("$baseUrl/notifications/block?package=com.discord").responseCode)
+        assertEquals(400, post("$baseUrl/notifications/block?package=com.discord&blocked=maybe").responseCode)
+    }
+
+    @Test
+    fun `wallpaper mode route accepts the three valid modes and rejects anything else`() {
+        val baseUrl = startServer()
+
+        assertEquals(200, post("$baseUrl/photos/wallpaper/mode?mode=single").responseCode)
+        assertEquals(WallpaperMode.SINGLE, fakeWallpaperConfigRepository.getMode())
+
+        assertEquals(200, post("$baseUrl/photos/wallpaper/mode?mode=scheduled").responseCode)
+        assertEquals(WallpaperMode.SCHEDULED, fakeWallpaperConfigRepository.getMode())
+
+        assertEquals(400, post("$baseUrl/photos/wallpaper/mode?mode=nonsense").responseCode)
+    }
+
+    @Test
+    fun `wallpaper single-photo route sets and clears the selection`() {
+        val baseUrl = startServer()
+
+        assertEquals(200, post("$baseUrl/photos/wallpaper/single?photoId=abc123").responseCode)
+        assertEquals("abc123", fakeWallpaperConfigRepository.getSinglePhotoId())
+
+        assertEquals(200, post("$baseUrl/photos/wallpaper/single").responseCode)
+        assertNull(fakeWallpaperConfigRepository.getSinglePhotoId())
+    }
+
+    @Test
+    fun `wallpaper schedule route accepts a JSON body list of entries`() {
+        val baseUrl = startServer()
+        val connection = postJson(
+            "$baseUrl/photos/wallpaper/schedule",
+            """[{"photoId":"abc","time":"07:00"},{"photoId":"def","time":"20:00"}]"""
+        )
+
+        assertEquals(200, connection.responseCode)
+        assertEquals(
+            listOf(WallpaperScheduleEntry("abc", "07:00"), WallpaperScheduleEntry("def", "20:00")),
+            fakeWallpaperConfigRepository.getSchedule()
+        )
+    }
+
+    @Test
+    fun `wallpaper schedule route rejects malformed JSON with 400`() {
+        val baseUrl = startServer()
+        assertEquals(400, postJson("$baseUrl/photos/wallpaper/schedule", "not json").responseCode)
+    }
+
+    @Test
+    fun `layout route replaces the layout with a valid JSON body`() {
+        val baseUrl = startServer()
+        val connection = postJson(
+            "$baseUrl/layout",
+            """[{"id":"weather","visible":true,"size":"small"}]"""
+        )
+
+        assertEquals(200, connection.responseCode)
+        assertEquals(
+            listOf(TileConfig("weather", visible = true, size = TileSize.SMALL)),
+            fakeLayoutRepository.getLayout()
+        )
+    }
+
+    @Test
+    fun `layout route silently rejects a layout that would leave zero visible tiles`() {
+        val baseUrl = startServer()
+        // Prove the guard actually rejects the write, not just that nothing
+        // ever gets through: apply a real change first, then confirm the
+        // all-invisible attempt leaves *that* in place rather than the
+        // original default layout.
+        postJson("$baseUrl/layout", """[{"id":"weather","visible":true,"size":"small"}]""").responseCode
+        val afterValidWrite = fakeLayoutRepository.getLayout()
+
+        val connection = postJson(
+            "$baseUrl/layout",
+            """[{"id":"weather","visible":false,"size":"medium"}]"""
+        )
+
+        assertEquals(200, connection.responseCode)
+        assertEquals(afterValidWrite, fakeLayoutRepository.getLayout())
+    }
+
     private fun get(url: String): HttpURLConnection =
         (URL(url).openConnection() as HttpURLConnection).apply {
             requestMethod = "GET"
@@ -477,5 +686,15 @@ class AuroraHttpServerTest {
             requestMethod = "POST"
             connectTimeout = 2000
             readTimeout = 2000
+        }
+
+    private fun postJson(url: String, body: String): HttpURLConnection =
+        (URL(url).openConnection() as HttpURLConnection).apply {
+            requestMethod = "POST"
+            connectTimeout = 2000
+            readTimeout = 2000
+            doOutput = true
+            setRequestProperty("Content-Type", "application/json")
+            outputStream.use { it.write(body.toByteArray(Charsets.UTF_8)) }
         }
 }

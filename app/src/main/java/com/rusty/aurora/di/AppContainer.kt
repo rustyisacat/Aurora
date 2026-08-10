@@ -9,7 +9,9 @@ import com.rusty.aurora.api.DashboardRoute
 import com.rusty.aurora.api.DeleteWakeAlarmRoute
 import com.rusty.aurora.api.DismissWakeAlarmRoute
 import com.rusty.aurora.api.GetWakeAlarmsRoute
+import com.rusty.aurora.api.GetHomeNetworkRoute
 import com.rusty.aurora.api.HealthRoute
+import com.rusty.aurora.api.KnownNotificationAppsRoute
 import com.rusty.aurora.api.NotificationIconRoute
 import com.rusty.aurora.api.PauseSoundRoute
 import com.rusty.aurora.api.PhotoLibraryRoute
@@ -18,7 +20,14 @@ import com.rusty.aurora.api.PlaySoundRoute
 import com.rusty.aurora.api.SetSleepTimerRoute
 import com.rusty.aurora.api.SetVolumeRoute
 import com.rusty.aurora.api.SetDefaultAlarmSoundRoute
+import com.rusty.aurora.api.SetHomeNetworkRoute
+import com.rusty.aurora.api.SetLayoutRoute
+import com.rusty.aurora.api.SetNotificationBlockedRoute
+import com.rusty.aurora.api.SetUserNameRoute
 import com.rusty.aurora.api.SetWakeAlarmRoute
+import com.rusty.aurora.api.SetWallpaperModeRoute
+import com.rusty.aurora.api.SetWallpaperScheduleRoute
+import com.rusty.aurora.api.SetWallpaperSinglePhotoRoute
 import com.rusty.aurora.api.SnoozeWakeAlarmRoute
 import com.rusty.aurora.api.SetDndRoute
 import com.rusty.aurora.api.SoundLibraryRoute
@@ -163,7 +172,16 @@ class AppContainer(context: Context) {
         PhotoLibraryRoute(photoRepository),
         PhotoStreamRoute(photoRepository),
         SetDndRoute(dndRepository),
-        NotificationIconRoute(appIconProvider)
+        NotificationIconRoute(appIconProvider),
+        SetUserNameRoute(userProfileRepository),
+        GetHomeNetworkRoute(homeNetworkRepository),
+        SetHomeNetworkRoute(homeNetworkRepository),
+        KnownNotificationAppsRoute(notificationBlocklistRepository),
+        SetNotificationBlockedRoute(notificationBlocklistRepository, notificationCountRepository),
+        SetWallpaperModeRoute(wallpaperConfigRepository),
+        SetWallpaperSinglePhotoRoute(wallpaperConfigRepository),
+        SetWallpaperScheduleRoute(wallpaperConfigRepository),
+        SetLayoutRoute(layoutRepository)
     )
 
     val serverController = AuroraServerController { port -> AuroraHttpServer(port, routes) }
