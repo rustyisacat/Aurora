@@ -25,7 +25,11 @@ internal data class OpenMeteoResponse(
         // real response) so old-shaped test fixtures without it still parse.
         val time: String = "",
         @SerialName("temperature_2m") val temperature: Double,
-        @SerialName("weather_code") val weatherCode: Int
+        @SerialName("weather_code") val weatherCode: Int,
+        @SerialName("apparent_temperature") val feelsLike: Double? = null,
+        @SerialName("wind_speed_10m") val windSpeed: Double? = null,
+        @SerialName("relative_humidity_2m") val humidity: Int? = null,
+        @SerialName("uv_index") val uvIndex: Double? = null
     )
 
     @Serializable

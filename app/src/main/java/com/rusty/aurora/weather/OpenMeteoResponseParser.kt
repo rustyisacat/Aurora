@@ -28,6 +28,10 @@ internal object OpenMeteoResponseParser {
             sunrise = response.daily.sunrise.firstOrNull()?.let(::extractTimeOfDay),
             sunset = response.daily.sunset.firstOrNull()?.let(::extractTimeOfDay),
             rainExpectedAt = findRainExpectedAt(response),
+            feelsLike = response.current.feelsLike?.roundToInt(),
+            windSpeedMph = response.current.windSpeed?.roundToInt(),
+            humidityPercent = response.current.humidity,
+            uvIndex = response.current.uvIndex?.roundToInt(),
             dailyForecast = buildDailyForecast(response.daily)
         )
     }

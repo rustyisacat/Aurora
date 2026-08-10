@@ -23,6 +23,15 @@ data class WeatherSnapshot(
     // no rain expected today, not "unknown" - the dashboard uses this
     // directly to decide whether to show an umbrella heads-up.
     val rainExpectedAt: String? = null,
+    // Rounded °F, mph, and % respectively - null only if Open-Meteo's
+    // response omitted them, same defensive reasoning as sunrise/sunset.
+    val feelsLike: Int? = null,
+    val windSpeedMph: Int? = null,
+    val humidityPercent: Int? = null,
+    // Standard 0-11+ scale - the dashboard derives the Low/Moderate/High/
+    // Very High/Extreme category client-side from it, same pattern as
+    // airQualityIndex's EPA category below.
+    val uvIndex: Int? = null,
     // Today plus the next few days (see WeatherConfig.FORECAST_DAYS) -
     // empty only if Open-Meteo's response omitted the daily block's time/
     // weather_code entirely, which shouldn't happen in practice.

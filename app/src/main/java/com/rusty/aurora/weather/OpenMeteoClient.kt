@@ -17,10 +17,11 @@ internal class OpenMeteoClient(
         val url = URL(
             "https://api.open-meteo.com/v1/forecast" +
                 "?latitude=$latitude&longitude=$longitude" +
-                "&current=temperature_2m,weather_code" +
+                "&current=temperature_2m,weather_code,apparent_temperature,wind_speed_10m,relative_humidity_2m,uv_index" +
                 "&daily=temperature_2m_max,temperature_2m_min,sunrise,sunset,weather_code" +
                 "&hourly=precipitation_probability" +
                 "&temperature_unit=fahrenheit" +
+                "&wind_speed_unit=mph" +
                 "&timezone=auto" +
                 "&forecast_days=${WeatherConfig.FORECAST_DAYS}"
         )

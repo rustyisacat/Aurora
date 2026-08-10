@@ -199,4 +199,47 @@ class OpenMeteoResponseParserTest {
             OpenMeteoResponseParser.parse(json).dailyForecast
         )
     }
+
+    @Test
+    fun `parses feelsLike, windSpeedMph, humidityPercent, and uvIndex when present`() {
+        val json = """
+            {
+              "timezone": "America/New_York",
+              "current": {
+                "temperature_2m": 74.3,
+                "weather_code": 0,
+                "apparent_temperature": 78.9,
+                "wind_speed_10m": 12.4,
+                "relative_humidity_2m": 65,
+                "uv_index": 6.7
+              },
+              "daily": { "temperature_2m_max": [86.1], "temperature_2m_min": [68.4] }
+            }
+        """.trimIndent()
+
+        val result = OpenMeteoResponseParser.parse(json)
+
+        assertEquals(79, result.feelsLike)
+        assertEquals(12, result.windSpeedMph)
+        assertEquals(65, result.humidityPercent)
+        assertEquals(7, result.uvIndex)
+    }
+
+    @Test
+    fun `feelsLike, windSpeedMph, humidityPercent, and uvIndex are null when the response omits them`() {
+        val json = """
+            {
+              "timezone": "America/New_York",
+              "current": { "temperature_2m": 74.3, "weather_code": 0 },
+              "daily": { "temperature_2m_max": [86.1], "temperature_2m_min": [68.4] }
+            }
+        """.trimIndent()
+
+        val result = OpenMeteoResponseParser.parse(json)
+
+        assertEquals(null, result.feelsLike)
+        assertEquals(null, result.windSpeedMph)
+        assertEquals(null, result.humidityPercent)
+        assertEquals(null, result.uvIndex)
+    }
 }
