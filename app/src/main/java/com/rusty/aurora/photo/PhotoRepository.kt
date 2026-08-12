@@ -16,6 +16,15 @@ interface PhotoRepository {
     /** Null if [id] isn't in the current selection, or its uri's grant was
      *  revoked (e.g. the photo was deleted from the phone). */
     fun openPhotoStream(id: String): PhotoStream?
+
+    /** Same lookup as [openPhotoStream], but downsampled to fit within
+     *  [maxDimension] on its longer side and re-encoded as JPEG - for
+     *  contexts that only ever display this as a small thumbnail (the
+     *  Settings page's photo grid/schedule list), where streaming a phone
+     *  camera's full multi-megabyte original would mean the Echo Show's
+     *  WebView has to decode every full-resolution photo just to paint a
+     *  ~70px square. Null under the same conditions as [openPhotoStream]. */
+    fun openPhotoThumbnail(id: String, maxDimension: Int = 200): PhotoStream?
 }
 
 data class PhotoInfo(val id: String, val uriString: String)

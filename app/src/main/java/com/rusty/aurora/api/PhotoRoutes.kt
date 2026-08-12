@@ -69,8 +69,15 @@ class PhotoStreamRoute(private val photoRepository: PhotoRepository) : Route {
         val id = session.parameters["id"]?.firstOrNull()
             ?: return NanoHTTPD.newFixedLengthResponse(Status.BAD_REQUEST, "text/plain", "Missing 'id'")
 
-        val stream = photoRepository.openPhotoStream(id)
-            ?: return NanoHTTPD.newFixedLengthResponse(Status.NOT_FOUND, "text/plain", "Unknown photo: $id")
+        // ?thumb=1 is the Settings page's photo grid/schedule list asking
+        // for a small downsampled JPEG instead of the original file - see
+        // PhotoRepository.openPhotoThumbnail's doc comment for why.
+        val wantsThumbnail = session.singleParam("thumb") != null
+        val stream = if (wantsThumbnail) {
+            photoRepository.openPhotoThumbnail(id)
+        } else {
+            photoRepository.openPhotoStream(id)
+        } ?: return NanoHTTPD.newFixedLengthResponse(Status.NOT_FOUND, "text/plain", "Unknown photo: $id")
 
         val response = NanoHTTPD.newFixedLengthResponse(
             Status.OK,

@@ -1,10 +1,13 @@
 package com.rusty.aurora.photo
 
 import android.content.Context
+import android.graphics.Bitmap
+import android.graphics.BitmapFactory
 import android.net.Uri
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
+import java.io.ByteArrayOutputStream
 
 /** SharedPreferences-backed, same pattern as SoundLibrary's persisted
  *  custom-sound entries - a single JSON blob under one key, since the
@@ -27,6 +30,43 @@ class PhotoRepositoryImpl(private val context: Context) : PhotoRepository {
             val bytes = context.contentResolver.openInputStream(uri)?.use { it.readBytes() } ?: return null
             val mimeType = context.contentResolver.getType(uri) ?: "image/jpeg"
             PhotoStream(bytes, mimeType)
+        }.getOrNull()
+    }
+
+    override fun openPhotoThumbnail(id: String, maxDimension: Int): PhotoStream? {
+        val entry = loadEntries().firstOrNull { it.id == id } ?: return null
+        return runCatching {
+            val uri = Uri.parse(entry.uriString)
+
+            // Decode bounds only first so downsampling happens during decode
+            // (inSampleSize), not after a full-resolution decode - the whole
+            // point is to never hold a multi-megapixel bitmap in memory.
+            val bounds = BitmapFactory.Options().apply { inJustDecodeBounds = true }
+            context.contentResolver.openInputStream(uri)?.use {
+                BitmapFactory.decodeStream(it, null, bounds)
+            } ?: return null
+
+            var sampleSize = 1
+            while (bounds.outWidth / (sampleSize * 2) >= maxDimension &&
+                bounds.outHeight / (sampleSize * 2) >= maxDimension
+            ) {
+                sampleSize *= 2
+            }
+
+            val bitmap = context.contentResolver.openInputStream(uri)?.use {
+                BitmapFactory.decodeStream(it, null, BitmapFactory.Options().apply { inSampleSize = sampleSize })
+            } ?: return null
+
+            val scale = maxDimension.toFloat() / maxOf(bitmap.width, bitmap.height)
+            val thumbnail = if (scale < 1f) {
+                Bitmap.createScaledBitmap(bitmap, (bitmap.width * scale).toInt(), (bitmap.height * scale).toInt(), true)
+            } else {
+                bitmap
+            }
+
+            val out = ByteArrayOutputStream()
+            thumbnail.compress(Bitmap.CompressFormat.JPEG, 80, out)
+            PhotoStream(out.toByteArray(), "image/jpeg")
         }.getOrNull()
     }
 
