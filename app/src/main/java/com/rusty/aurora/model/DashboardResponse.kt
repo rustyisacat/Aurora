@@ -2,6 +2,7 @@ package com.rusty.aurora.model
 
 import com.rusty.aurora.alarm.NextAlarm
 import com.rusty.aurora.calendar.CalendarEvent
+import com.rusty.aurora.calendar.WeekDay
 import com.rusty.aurora.layout.DEFAULT_TILE_LAYOUT
 import com.rusty.aurora.layout.TileConfig
 import com.rusty.aurora.notifications.NotificationGroup
@@ -52,6 +53,10 @@ data class DashboardResponse(
     val nextAlarm: NextAlarm? = null,
     val calendar: List<CalendarEvent> = emptyList(),
     val calendarShowsTomorrow: Boolean = false,
+    // Today through six days out - independent of calendar/
+    // calendarShowsTomorrow's own today-or-tomorrow window, for the
+    // dashboard's separate weekly view. See CalendarRepository.getWeekEvents.
+    val weekCalendar: List<WeekDay> = emptyList(),
     val weather: WeatherSnapshot? = null,
     val soundMachine: SoundMachineState,
     val wakeAlarms: List<WakeAlarm> = emptyList(),

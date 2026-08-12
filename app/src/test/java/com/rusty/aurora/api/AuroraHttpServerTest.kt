@@ -6,6 +6,7 @@ import com.rusty.aurora.alarm.NextAlarm
 import com.rusty.aurora.battery.BatteryRepository
 import com.rusty.aurora.calendar.CalendarEvent
 import com.rusty.aurora.calendar.CalendarRepository
+import com.rusty.aurora.calendar.WeekDay
 import com.rusty.aurora.layout.DEFAULT_TILE_LAYOUT
 import com.rusty.aurora.layout.LayoutRepository
 import com.rusty.aurora.layout.TileConfig
@@ -73,6 +74,7 @@ class AuroraHttpServerTest {
         override fun hasCalendarPermission(): Boolean = true
         override fun getEvents(): List<CalendarEvent> = events
         override fun isShowingTomorrow(): Boolean = false
+        override fun getWeekEvents(): List<WeekDay> = emptyList()
     }
 
     private class FakeAlarmRepository(private val alarm: NextAlarm?) : AlarmRepository {
@@ -371,7 +373,7 @@ class AuroraHttpServerTest {
                 """"latestTitle":"Alice","latestText":"hey"}],""" +
                 """"nextAlarm":{"time":"07:00","enabled":true},""" +
                 """"calendar":[{"title":"School","start":"08:00","end":"15:00","allDay":false}],""" +
-                """"calendarShowsTomorrow":false,""" +
+                """"calendarShowsTomorrow":false,"weekCalendar":[],""" +
                 """"weather":{"temperature":74,"condition":"Clear","high":86,"low":68,"timezone":"America/New_York","sunrise":"06:15","sunset":"20:42","rainExpectedAt":null,"precipitationProbability":null,"feelsLike":null,"windSpeedMph":null,"humidityPercent":null,"uvIndex":null,"dailyForecast":[],"airQualityIndex":null,"radarStation":null},""" +
                 """"soundMachine":{"playing":false,"sound":null,"volume":50,"sleepTimerMinutes":null},""" +
                 """"wakeAlarms":[],""" +
@@ -390,7 +392,7 @@ class AuroraHttpServerTest {
 
         assertEquals(
             """{"battery":77,"charging":true,"notifications":0,"notificationGroups":[],""" +
-                """"nextAlarm":null,"calendar":[],"calendarShowsTomorrow":false,"weather":null,""" +
+                """"nextAlarm":null,"calendar":[],"calendarShowsTomorrow":false,"weekCalendar":[],"weather":null,""" +
                 """"soundMachine":{"playing":false,"sound":null,"volume":50,"sleepTimerMinutes":null},""" +
                 """"wakeAlarms":[],""" +
                 """"wakeAlarmRinging":{"ringing":false,"alarmId":null,"label":"","soundId":null},""" +

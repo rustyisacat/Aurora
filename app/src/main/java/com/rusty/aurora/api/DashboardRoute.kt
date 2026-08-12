@@ -50,6 +50,7 @@ class DashboardRoute(
             nextAlarm = alarmRepository.getNextAlarm(),
             calendar = calendarRepository.getEvents(),
             calendarShowsTomorrow = calendarRepository.isShowingTomorrow(),
+            weekCalendar = calendarRepository.getWeekEvents(),
             weather = weatherRepository.getWeather(),
             soundMachine = soundRepository.getState(),
             wakeAlarms = wakeAlarmRepository.getAlarms(),

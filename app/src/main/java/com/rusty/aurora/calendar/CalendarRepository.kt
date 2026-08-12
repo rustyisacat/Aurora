@@ -21,4 +21,12 @@ interface CalendarRepository {
      *  of calendar permission or data. Lets callers label the list
      *  correctly (e.g. "Tomorrow's Events" instead of "Today's Events"). */
     fun isShowingTomorrow(): Boolean
+
+    /** Today through six days out, one [WeekDay] per calendar day in
+     *  order, always seven entries (even on permission denial - each day
+     *  just has an empty events list, same "always return a shape,
+     *  never throw" convention [getEvents] follows). Independent of
+     *  [getEvents]/[isShowingTomorrow]'s own today-or-tomorrow window -
+     *  this is for the dashboard's separate weekly view. */
+    fun getWeekEvents(): List<WeekDay>
 }

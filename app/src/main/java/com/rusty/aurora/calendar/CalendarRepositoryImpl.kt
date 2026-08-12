@@ -5,7 +5,10 @@ import android.content.Context
 import android.content.pm.PackageManager
 import android.provider.CalendarContract
 import androidx.core.content.ContextCompat
+import java.text.SimpleDateFormat
 import java.util.Calendar
+import java.util.Date
+import java.util.Locale
 
 class CalendarRepositoryImpl(private val context: Context) : CalendarRepository {
 
@@ -23,6 +26,19 @@ class CalendarRepositoryImpl(private val context: Context) : CalendarRepository 
         val (startOfDay, endOfDay) = dayRangeMillis(dayOffset)
         return CalendarEventMapper.toSortedEvents(queryInstances(startOfDay, endOfDay))
     }
+
+    override fun getWeekEvents(): List<WeekDay> = (0..6).map { offset ->
+        val (startOfDay, endOfDay) = dayRangeMillis(offset)
+        val events = if (hasCalendarPermission()) {
+            CalendarEventMapper.toSortedEvents(queryInstances(startOfDay, endOfDay))
+        } else {
+            emptyList()
+        }
+        WeekDay(date = isoDate(startOfDay), events = events)
+    }
+
+    private fun isoDate(epochMillis: Long): String =
+        SimpleDateFormat("yyyy-MM-dd", Locale.US).format(Date(epochMillis))
 
     private fun queryInstances(startOfDay: Long, endOfDay: Long): List<RawCalendarInstance> {
         val projection = arrayOf(
