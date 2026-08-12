@@ -55,6 +55,15 @@ picking up the phone:
   the existing volume ramp), a Sound Machine mute button and
   recently-played chips, a bedtime low-battery nudge tied to Bedside
   Mode, and an optional schedule to enter Bedside Mode automatically.
+- More dashboard-only polish landed after those routes, none of it
+  touching Aurora's own API: the animated weather backgrounds got
+  substantially richer (real layered depth per condition instead of flat
+  shapes), the Settings page can force any weather background effect on
+  demand or on a recurring schedule independent of the real weather,
+  severe weather alerts can now be dismissed individually from their
+  banner, and Bedside Mode's rain autoplay is optional. See
+  [echo-dashboard](https://github.com/rustyisacat/echo-dashboard)'s README
+  for the details.
 
 ## What's new in v3.0
 
