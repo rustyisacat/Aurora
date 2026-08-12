@@ -41,10 +41,14 @@ class PhotoRepositoryImpl(private val context: Context) : PhotoRepository {
             // Decode bounds only first so downsampling happens during decode
             // (inSampleSize), not after a full-resolution decode - the whole
             // point is to never hold a multi-megapixel bitmap in memory.
+            // decodeStream() always returns null in inJustDecodeBounds mode
+            // by design (it only fills in outWidth/outHeight) - the null
+            // check here has to be on the stream itself, not this result,
+            // or every thumbnail request "fails" via a spurious non-local
+            // return before the real decode even runs.
             val bounds = BitmapFactory.Options().apply { inJustDecodeBounds = true }
-            context.contentResolver.openInputStream(uri)?.use {
-                BitmapFactory.decodeStream(it, null, bounds)
-            } ?: return null
+            val boundsStream = context.contentResolver.openInputStream(uri) ?: return@runCatching null
+            boundsStream.use { BitmapFactory.decodeStream(it, null, bounds) }
 
             var sampleSize = 1
             while (bounds.outWidth / (sampleSize * 2) >= maxDimension &&
@@ -53,9 +57,10 @@ class PhotoRepositoryImpl(private val context: Context) : PhotoRepository {
                 sampleSize *= 2
             }
 
-            val bitmap = context.contentResolver.openInputStream(uri)?.use {
+            val decodeStream = context.contentResolver.openInputStream(uri) ?: return@runCatching null
+            val bitmap = decodeStream.use {
                 BitmapFactory.decodeStream(it, null, BitmapFactory.Options().apply { inSampleSize = sampleSize })
-            } ?: return null
+            } ?: return@runCatching null
 
             val scale = maxDimension.toFloat() / maxOf(bitmap.width, bitmap.height)
             val thumbnail = if (scale < 1f) {
