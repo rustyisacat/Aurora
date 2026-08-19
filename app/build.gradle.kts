@@ -22,8 +22,8 @@ android {
         // own Galaxy A13, so there's no reason to support older devices.
         minSdk = 26
         targetSdk = 36
-        versionCode = 3
-        versionName = "1.5"
+        versionCode = 4
+        versionName = "4.1"
     }
 
     buildTypes {

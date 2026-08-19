@@ -3,7 +3,7 @@
 ![Platform](https://img.shields.io/badge/platform-Android-3DDC84?logo=android&logoColor=white)
 ![Kotlin](https://img.shields.io/badge/Kotlin-2.2-7F52FF?logo=kotlin&logoColor=white)
 ![Jetpack Compose](https://img.shields.io/badge/UI-Jetpack%20Compose-4285F4?logo=jetpackcompose&logoColor=white)
-![Version](https://img.shields.io/badge/version-4.0-blue)
+![Version](https://img.shields.io/badge/version-4.1-blue)
 ![License: AGPL v3](https://img.shields.io/badge/License-AGPL%20v3-blue.svg)
 
 Aurora turns an Android phone into the backend for a self-hosted bedside
